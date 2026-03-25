@@ -1,26 +1,47 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>JennAI – Pflege KI GRATIS</title>
+<title>JennAI</title>
 
 <style>
 body{margin:0;font-family:Arial;background:#eef2f7;}
-#openBtn{position:fixed;bottom:20px;right:20px;font-size:48px;cursor:pointer;}
+
+#openBtn{
+position:fixed;bottom:20px;right:20px;font-size:48px;cursor:pointer;
+}
+
 #widget{
-position:fixed;bottom:20px;right:20px;width:580px;height:720px;
-background:white;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,0.3);
+position:fixed;bottom:20px;right:20px;width:540px;height:640px;
+background:white;border-radius:14px;
+box-shadow:0 20px 60px rgba(0,0,0,0.35);
 display:none;flex-direction:column;
 }
-.header{background:#0f4c81;color:white;padding:12px;display:flex;justify-content:space-between;}
-.content{padding:12px;flex:1;overflow:auto;}
 
-textarea{width:100%;height:120px;margin-top:8px;padding:8px;border-radius:6px;border:1px solid #ccc;}
+.header{
+background:#0f4c81;color:white;padding:12px;font-weight:bold;
+}
 
-button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font-weight:bold;}
+.content{
+padding:14px;flex:1;overflow:auto;
+}
+
+textarea{
+width:100%;height:140px;border-radius:8px;
+border:1px solid #c9d3e0;padding:8px;margin-top:8px;
+}
+
+button{
+width:100%;padding:10px;margin-top:8px;
+border:none;border-radius:8px;font-weight:bold;cursor:pointer;
+}
+
 .generate{background:#0f4c81;color:white;}
-.ki{background:#8e44ad;color:white;}
+.smart{background:#8e44ad;color:white;}
 .learn{background:#f39c12;color:white;}
+.copy{background:#27ae60;color:white;}
+.reset{background:#c0392b;color:white;}
+
 </style>
 </head>
 
@@ -29,18 +50,17 @@ button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font
 <div id="openBtn" onclick="openWidget()">👩‍⚕️</div>
 
 <div id="widget">
-<div class="header">
-<span>JennAI – GRATIS KI</span>
-<span onclick="closeWidget()">✖</span>
-</div>
+<div class="header">JennAI – Pflegeassistenz</div>
 
 <div class="content">
 
-<textarea id="input" placeholder="Freitext..."></textarea>
+<textarea id="input" placeholder="Freitext eingeben..."></textarea>
 
 <button class="generate" onclick="generate()">Bericht erstellen</button>
-<button class="ki" onclick="generateKI()">🤖 ChatGPT nutzen</button>
-<button class="learn" onclick="learn()">🧠 Ergebnis speichern</button>
+<button class="smart" onclick="generateSmart()">🤖 KI Modus</button>
+<button class="learn" onclick="learn()">🧠 Lernen</button>
+<button class="copy" onclick="copyText()">Kopieren</button>
+<button class="reset" onclick="resetAll()">Reset</button>
 
 <textarea id="output"></textarea>
 
@@ -50,8 +70,10 @@ button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font
 <script>
 
 /* UI */
-function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
-function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
+function openWidget(){
+widget.style.display="flex";
+openBtn.style.display="none";
+}
 
 /* MEMORY */
 function getMemory(){
@@ -61,7 +83,7 @@ function saveMemory(m){
 localStorage.setItem("pflegeKI", JSON.stringify(m));
 }
 
-/* GENERATE */
+/* ================= BASIS KI ================= */
 function generate(){
 
 let t = input.value.toLowerCase();
@@ -75,39 +97,49 @@ return;
 }
 }
 
-/* pseudo KI */
+let r=[];
+let risks=[];
+
+if(t.includes("schlecht")){r.push("Allgemeinzustand deutlich reduziert");risks.push("kritisch");}
+if(t.includes("verwirrt") || t.includes("komisch")) r.push("wirkte desorientiert");
+if(t.includes("läuft") || t.includes("unruhig")){r.push("motorisch unruhig");risks.push("Sturzrisiko");}
+if(t.includes("weglaufen")){r.push("Weglauftendenz vorhanden");risks.push("Eigengefährdung");}
+if(t.includes("trinkt nicht")){r.push("Flüssigkeitsaufnahme verweigert");risks.push("Dehydratation");}
+if(t.includes("stuhl") && t.includes("verschmiert")) r.push("Stuhlkontamination festgestellt");
+
 let text="";
 
-if(t.includes("schlecht")) text+="Allgemeinzustand reduziert. ";
-if(t.includes("trinkt nicht")) text+="Flüssigkeitsaufnahme verweigert. ";
-if(t.includes("läuft herum")) text+="motorisch unruhig. ";
-if(t.includes("weglaufen")) text+="Weglauftendenz vorhanden. ";
+if(r.length){
+text = r.join(", ") + ".";
+}
 
-if(!text) text="Keine relevanten Auffälligkeiten.";
+if(risks.length){
+text += " Risiken: " + [...new Set(risks)].join(", ") + ".";
+}
+
+if(!text){
+text="Keine relevanten Auffälligkeiten.";
+}
 
 output.value=text;
 }
 
-/* CHATGPT */
-function generateKI(){
+/* ================= SMART KI (FAKE GPT STYLE) ================= */
+function generateSmart(){
 
-let text = input.value;
+generate(); // Basis
 
-let prompt = `
-Schreibe einen professionellen Pflegebericht:
-- sachlich
-- Fachsprache
-- Risiken
+let t = output.value;
 
-Text:
-${text}
-`;
+/* Stil verbessern wie ChatGPT */
+t = t.replace("wirkte desorientiert","Der Bewohner zeigte sich desorientiert");
+t = t.replace("motorisch unruhig","es zeigte sich eine ausgeprägte motorische Unruhe");
+t = t.replace("Flüssigkeitsaufnahme verweigert","die Flüssigkeitsaufnahme wurde nicht angenommen");
 
-navigator.clipboard.writeText(prompt);
-window.open("https://chat.openai.com");
+output.value = t;
 }
 
-/* LEARN */
+/* ================= LERNEN ================= */
 function learn(){
 
 let m = getMemory();
@@ -122,6 +154,16 @@ saveMemory(m);
 alert("Gespeichert");
 }
 
+/* TOOLS */
+function copyText(){
+navigator.clipboard.writeText(output.value);
+}
+function resetAll(){
+input.value="";
+output.value="";
+}
+
 </script>
+
 </body>
 </html>
