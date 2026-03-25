@@ -1,270 +1,142 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>JennAI – Digitale Pflegeassistenz</title>
-
-<style>
-body{margin:0;font-family:Arial;background:#eef2f7;}
-#openBtn{position:fixed;bottom:20px;right:20px;font-size:48px;cursor:pointer;}
-#widget{
-position:fixed;bottom:20px;right:20px;width:520px;height:640px;
-background:white;border-radius:12px;box-shadow:0 15px 40px rgba(0,0,0,0.3);
-display:none;flex-direction:column;
-}
-.header{background:#0f4c81;color:white;padding:12px;display:flex;justify-content:space-between;cursor:move;}
-.content{padding:12px;flex:1;overflow:auto;}
-textarea{width:100%;height:140px;margin-top:8px;padding:8px;border-radius:6px;border:1px solid #ccc;}
-button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
-.generate{background:#0f4c81;color:white;}
-.copy{background:#27ae60;color:white;}
-.reset{background:#c0392b;color:white;}
-</style>
-</head>
-
-<body>
-
-<div id="openBtn" onclick="openWidget()">👩‍⚕️</div>
-
-<div id="widget">
-<div class="header" id="dragHeader">
-<span>JennAI – Digitale Pflegeassistenz</span>
-<span onclick="closeWidget()" style="cursor:pointer;">✖</span>
-</div>
-
-<div class="content">
-
-<textarea id="input" placeholder="Freitext eingeben..."></textarea>
-
-<button class="generate" onclick="generate()">Bericht erstellen</button>
-<button class="copy" onclick="copyText()">Bericht kopieren</button>
-<button class="reset" onclick="resetAll()">Zurücksetzen</button>
-
-<textarea id="output"></textarea>
-
-</div>
-</div>
-
 <script>
 
-/* ================= OPEN ================= */
-function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
-function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
-
-/* ================= MAX SYNONYM ENGINE ================= */
-const rules = [
-
-/* ZUSTAND */
-{patterns:[
-"az schlecht","sehr schlecht","kritisch","mies","extrem schwach","kaum belastbar","sehr reduziert",
-"stark reduziert","deutlich reduziert","schlechter zustand","allgemein schlecht"
-], text:"Allgemeinzustand deutlich reduziert"},
-
-{patterns:[
-"az reduziert","eingeschränkt","geschwächt","mäßig","reduziert","nicht fit","schwach"
-], text:"Allgemeinzustand reduziert"},
-
-{patterns:[
-"az gut","stabil","gut","unauffällig","fit","sehr gut","normal"
-], text:"Allgemeinzustand stabil"},
-
-/* ORIENTIERUNG */
-{patterns:[
-"verwirrt","desorientiert","orientierungslos","weiß nicht wo","weiß nicht wer","durcheinander",
-"kognitiv eingeschränkt","dement","nicht klar"
-], text:"wirkte desorientiert"},
-
-{patterns:[
-"orientiert","klar","wach und klar","ansprechbar","voll orientiert"
-], text:"orientiert"},
-
-/* MOBILITÄT */
-{patterns:[
-"braucht hilfe beim gehen","unsicher beim gehen","wackelig","instabil","mit hilfe mobil",
-"geht nicht alleine","mobilisation mit hilfe","stütze notwendig"
-], text:"Mobilisation mit Unterstützung"},
-
-{patterns:[
-"mobil","läuft alleine","geht alleine","selbstständig mobil","aufgestanden",
-"frei mobil","selbstständig gegangen"
-], text:"Mobilisation selbstständig"},
-
-{patterns:[
-"bettlägerig","liegt nur im bett","kommt nicht hoch","bleibt im bett","immobil"
-], text:"überwiegend bettlägerig"},
-
-/* ERNÄHRUNG */
-{patterns:[
-"nicht gegessen","essen verweigert","isst nicht","kein appetit","nahrungsaufnahme verweigert",
-"kaum gegessen","gar nichts gegessen"
-], text:"Nahrungsaufnahme nicht erfolgt"},
-
-{patterns:[
-"wenig gegessen","schlecht gegessen","isst wenig","nahrungsaufnahme reduziert"
-], text:"Nahrungsaufnahme reduziert"},
-
-{patterns:[
-"gut gegessen","alles gegessen","isst gut","voll gegessen"
-], text:"Nahrungsaufnahme ausreichend"},
-
-/* TRINKEN */
-{patterns:[
-"trinkt nicht","trinken verweigert","nimmt keine flüssigkeit","verweigert trinken",
-"kaum getrunken","hat nichts getrunken","keine flüssigkeit aufgenommen"
-], text:"Flüssigkeitsaufnahme verweigert"},
-
-{patterns:[
-"wenig getrunken","zu wenig getrunken","trinkt wenig"
-], text:"Trinkmenge reduziert"},
-
-{patterns:[
-"gut getrunken","viel getrunken","ausreichend getrunken","trinkt gut"
-], text:"Trinkmenge ausreichend"},
-
-/* AUSSCHIEDUNG */
-{patterns:[
-"eingekotet","stuhl überall","stuhl verloren","stuhl in kleidung","stuhl im bett"
-], text:"Stuhlkontamination"},
-
-{patterns:[
-"eingenässt","urin überall","inkontinent","harn verloren","hose nass","urin in kleidung"
-], text:"Harninkontinenz"},
-
-{patterns:[
-"verstopfung","kein stuhl","kein stuhlgang","obstipation"
-], text:"Hinweis auf Obstipation"},
-
-{patterns:[
-"durchfall","dünnstuhl","flüssiger stuhl","diarrhoe"
-], text:"Diarrhoe"},
-
-/* HAUT */
-{patterns:[
-"wunde","offene stelle","haut offen","verletzung"
-], text:"Wunde vorhanden"},
-
-{patterns:[
-"rötung","gerötet","rote stelle","haut gerötet"
-], text:"Rötung beobachtet"},
-
-{patterns:[
-"dekubitus","druckstelle","druckgeschwür"
-], text:"Dekubitus vorhanden"},
-
-/* SCHMERZ */
-{patterns:[
-"keine schmerzen","schmerzfrei"
-], text:"keine Schmerzen angegeben"},
-
-{patterns:[
-"schmerzen","hat schmerzen","klagt über schmerzen","schmerz angegeben"
-], text:"Schmerzen angegeben"},
-
-/* VERHALTEN */
-{patterns:[
-"unruhig","zappelig","ruhelos","läuft herum","ständig unterwegs"
-], text:"motorisch unruhig"},
-
-{patterns:[
-"aggressiv","schlägt","tritt","wehrt sich","verhält sich aggressiv"
-], text:"herausforderndes Verhalten"},
-
-{patterns:[
-"schreit","brüllt","ruft laut","laut"
-], text:"vermehrte Lautäußerungen"},
-
-{patterns:[
-"ängstlich","hat angst","unsicher"
-], text:"wirkte ängstlich"},
-
-/* ATMUNG */
-{patterns:[
-"atemnot","kurzatmig","bekommt schlecht luft","luftnot"
-], text:"Atemnot"},
-
-{patterns:[
-"husten","hustet"
-], text:"Husten"},
-
-/* VITAL */
-{patterns:[
-"fieber","temperatur hoch","erhöhte temperatur"
-], text:"erhöhte Temperatur"},
-
-{patterns:[
-"blutdruck","rr"
-], text:"Blutdruck kontrolliert"},
-
-{patterns:[
-"puls"
-], text:"Puls kontrolliert"}
-
-];
-
-/* ================= GENERATOR ================= */
+/* ================= INPUT ================= */
 function generate(){
 
-let input=document.getElementById("input").value.toLowerCase();
-let parts=[];
+let t = input.value.toLowerCase();
 
-rules.forEach(rule=>{
-rule.patterns.forEach(p=>{
-if(input.includes(p)){
-parts.push(rule.text);
+/* ================= LEVEL 1–2: SYNONYME ================= */
+function has(...arr){
+return arr.some(a=>t.includes(a));
 }
-});
-});
 
-parts=[...new Set(parts)];
+/* ================= LEVEL 3: KONTEXT ================= */
+let findings = [];
+let risks = new Set();
+
+/* ===== ZUSTAND ===== */
+if(has("az schlecht","kritisch","mies","sehr schlecht","extrem schwach")){
+findings.push({text:"Allgemeinzustand deutlich reduziert",prio:1});
+risks.add("hoch");
+}
+else if(has("reduziert","schwach")){
+findings.push({text:"Allgemeinzustand reduziert",prio:2});
+}
+else if(has("stabil","gut")){
+findings.push({text:"Allgemeinzustand stabil",prio:3});
+}
+
+/* ===== TRINKEN ===== */
+if(has("trinkt nicht","verweigert trinken","nimmt nichts an","kaum getrunken","nichts getrunken")){
+findings.push({text:"Flüssigkeitsaufnahme verweigert",prio:1});
+risks.add("dehydratation");
+}
+else if(has("wenig getrunken")){
+findings.push({text:"Trinkmenge reduziert",prio:2});
+risks.add("dehydratation");
+}
+
+/* ===== ESSEN ===== */
+if(has("isst nicht","nicht gegessen","verweigert essen","nimmt nichts an")){
+findings.push({text:"Nahrungsaufnahme nicht erfolgt",prio:1});
+risks.add("mangelernährung");
+}
+
+/* ===== STUHL ===== */
+if(has("stuhl verschmiert","eingekotet","stuhl überall","stuhl im bett","stuhl in kleidung")){
+findings.push({text:"Stuhlkontamination festgestellt",prio:1});
+risks.add("haut");
+}
+
+/* ===== HARN ===== */
+if(has("eingenässt","alles nass","urin überall","hose nass","bett nass")){
+findings.push({text:"Harnkontamination festgestellt",prio:1});
+risks.add("haut");
+}
+
+/* ===== MOBILITÄT ===== */
+if(has("unsicher","wackelig","fast gestürzt")){
+findings.push({text:"erhöhtes Sturzrisiko",prio:2});
+risks.add("sturz");
+}
+if(has("bettlägerig","kommt nicht hoch")){
+findings.push({text:"überwiegend bettlägerig",prio:2});
+risks.add("dekubitus");
+}
+
+/* ===== VERHALTEN ===== */
+if(has("verwirrt","komisch drauf","anders als sonst","durcheinander")){
+findings.push({text:"wirkte desorientiert",prio:2});
+risks.add("sturz");
+}
+if(has("unruhig","läuft herum","zappelig")){
+findings.push({text:"motorisch unruhig",prio:2});
+}
+
+/* ===== ATMUNG ===== */
+if(has("atemnot","bekommt schlecht luft","luftnot")){
+findings.push({text:"Atemnot",prio:1});
+risks.add("akut");
+}
+if(has("husten")){
+findings.push({text:"Husten",prio:3});
+}
+
+/* ===== HAUT ===== */
+if(has("wunde","offene stelle")){
+findings.push({text:"Wunde vorhanden",prio:1});
+risks.add("infektion");
+}
+if(has("rötung","rot")){
+findings.push({text:"Rötung beobachtet",prio:2});
+risks.add("dekubitus");
+}
+
+/* ===== SCHMERZ ===== */
+if(has("schmerzen","aua","tut weh","jammert")){
+findings.push({text:"Schmerzen angegeben",prio:2});
+}
+
+/* ===== SCHLAF ===== */
+if(has("schlecht geschlafen","oft wach")){
+findings.push({text:"Nachtruhe gestört",prio:3});
+}
+
+/* ===== MEDIKATION ===== */
+if(has("medikamente","tabletten","medis")){
+findings.push({text:"Medikation verabreicht",prio:3});
+}
+
+/* ================= LEVEL 4: PRIORISIERUNG ================= */
+findings.sort((a,b)=>a.prio-b.prio);
+
+/* ================= TEXT ================= */
+let parts=[...new Set(findings.map(f=>f.text))];
 
 let text="";
 
-if(parts.length>0){
-text=parts[0].charAt(0).toUpperCase()+parts[0].slice(1);
+if(parts.length){
+text=parts[0];
 for(let i=1;i<parts.length;i++){
-if(i===parts.length-1){
-text+=" und "+parts[i];
-}else{
-text+=", "+parts[i];
-}
+text+=(i===parts.length-1?" und ":", ")+parts[i];
 }
 text+=".";
 }else{
 text="Keine relevanten Auffälligkeiten.";
 }
 
-output.value=text;
+/* ================= LEVEL 5: RISIKEN ================= */
+if(risks.size){
+text+=" Risiken: "+[...risks].join(", ")+".";
 }
 
-/* ================= COPY ================= */
-function copyText(){
-navigator.clipboard.writeText(output.value);
-alert("Bericht kopiert");
+/* ================= LEVEL 6: FEINSINN ================= */
+if(has("komisch drauf","nicht wie sonst")){
+text+=" Verhalten im Vergleich zu sonst verändert.";
 }
 
-/* ================= RESET ================= */
-function resetAll(){
-input.value="";
-output.value="";
+/* OUTPUT */
+output.value = text.charAt(0).toUpperCase()+text.slice(1);
 }
-
-/* ================= DRAG ================= */
-let offsetX, offsetY, isDown=false;
-
-dragHeader.addEventListener("mousedown",function(e){
-isDown=true;
-offsetX=widget.offsetLeft - e.clientX;
-offsetY=widget.offsetTop - e.clientY;
-});
-document.addEventListener("mouseup",()=>isDown=false);
-document.addEventListener("mousemove",function(e){
-if(!isDown) return;
-widget.style.left=(e.clientX + offsetX)+"px";
-widget.style.top=(e.clientY + offsetY)+"px";
-widget.style.bottom="auto";
-widget.style.right="auto";
-});
 
 </script>
-</body>
-</html>
