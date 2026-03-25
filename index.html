@@ -46,50 +46,26 @@ button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font
 </div>
 
 <script>
-async function hfAI(text){
+async function generate(){
 
-try{
-let res = await fetch(
-"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
-{
-method:"POST",
-headers:{
-"Authorization":"Bearer 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",
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-inputs: `
-Pflegebericht erstellen:
-- sachlich
-- Fachsprache
-- Risiken benennen
+let text = document.getElementById("input").value;
 
-Text:
-${text}
-`
-})
-});
+/* einfache KI (dein System) */
+let local = "Verarbeitung...";
 
-let data = await res.json();
+/* sofort anzeigen */
+document.getElementById("output").value = local;
 
-if(Array.isArray(data)){
-return data[0]?.generated_text;
-}
+/* echte KI */
+let ai = await hfAI(text);
 
-}catch(e){
-return null;
+if(ai){
+document.getElementById("output").value = ai;
+}else{
+document.getElementById("output").value = "Keine KI Antwort";
 }
 
 }
-/* UI */
-function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
-function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
-
-/* NLP */
-function tokens(t){return t.toLowerCase().split(/[\s,.;:!?]+/);}
-function has(t,arr){return arr.some(a=>t.includes(a));}
-
-function generate(){
 
 let raw=input.value.toLowerCase();
 let t=tokens(raw);
@@ -223,7 +199,41 @@ output.value="";
 
 /* DRAG */
 let offsetX, offsetY, isDown=false;
+async function hfAI(text){
 
+try{
+let res = await fetch(
+"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
+{
+method:"POST",
+headers:{
+"Authorization":"Bearer hf_DEIN_TOKEN",
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+inputs: `
+Schreibe einen professionellen Pflegebericht:
+- sachlich
+- Fachsprache
+- Risiken
+
+Text:
+${text}
+`
+})
+});
+
+let data = await res.json();
+
+if(Array.isArray(data)){
+return data[0]?.generated_text;
+}
+
+}catch(e){
+return null;
+}
+
+}
 dragHeader.addEventListener("mousedown",function(e){
 isDown=true;
 offsetX=widget.offsetLeft - e.clientX;
