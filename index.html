@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pflegebericht Professional</title>
+<title>Pflegebericht Professional+</title>
 
 <style>
 body { margin:0; font-family:Arial; background:#f4f6fa; }
@@ -30,8 +30,8 @@ z-index:1000;
 position:fixed;
 bottom:20px;
 right:20px;
-width:520px;
-height:760px;
+width:560px;
+height:780px;
 background:white;
 border-radius:18px;
 box-shadow:0 20px 60px rgba(0,0,0,0.35);
@@ -55,22 +55,9 @@ overflow:auto;
 flex:1;
 }
 
-.option{
-padding:8px;
-margin:5px 0;
-border:1px solid #ddd;
-border-radius:8px;
-cursor:pointer;
-}
-
-.option.selected{
-background:#003cff;
-color:white;
-}
-
 textarea{
 width:100%;
-height:120px;
+height:130px;
 margin-top:8px;
 border-radius:8px;
 border:1px solid #ccc;
@@ -102,20 +89,12 @@ font-weight:bold;
 
 <div id="widget">
 
-<div class="header" id="dragHeader">Pflegebericht Generator</div>
+<div class="header" id="dragHeader">Pflegebericht Generator Professional+</div>
 
 <div class="content">
 
-<h4>Kategorie (optional)</h4>
-
-<div class="option" onclick="selectCategory(this)">Allgemeiner Pflegebericht</div>
-<div class="option" onclick="selectCategory(this)">Essen & Trinken</div>
-<div class="option" onclick="selectCategory(this)">Mobilisation</div>
-<div class="option" onclick="selectCategory(this)">Medikamente</div>
-<div class="option" onclick="selectCategory(this)">Sturzereignis</div>
-
-<h4>Freitext / Beobachtung</h4>
-<textarea id="keywords" placeholder="z.B. az schlecht verweigert essen trinken mobilisiert mit hilfe sehr unruhig"></textarea>
+<h4>Beobachtung / Freitext</h4>
+<textarea id="keywords" placeholder="z.B. az schlecht duschen verweigert essen trinken nicht angenommen mobilisiert mit hilfe unruhig"></textarea>
 
 <button class="generate" onclick="generate()">Pflegebericht erstellen</button>
 <button class="copy" onclick="copyText()">Bericht kopieren</button>
@@ -128,7 +107,6 @@ font-weight:bold;
 
 <script>
 
-let selectedCategory="";
 let widget=document.getElementById("widget");
 let openBtn=document.getElementById("openBtn");
 
@@ -136,12 +114,6 @@ openBtn.onclick=function(){
 widget.style.display="flex";
 openBtn.style.display="none";
 };
-
-function selectCategory(el){
-document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
-el.classList.add("selected");
-selectedCategory=el.innerText;
-}
 
 function generate(){
 
@@ -153,91 +125,84 @@ input=input
 .replace(/schlecht/g,"reduziert")
 .replace(/verweigert/g,"nicht angenommen")
 .replace(/will nicht/g,"lehnt ab")
-.replace(/sehr/g,"deutlich")
-.replace(/viel/g,"wiederholt")
 .replace(/nix/g,"nicht");
 
-/* Wortliste ohne Komma notwendig */
-let words=input.split(/\s+/);
-
 /* Flags */
-let reduced=false;
-let stable=false;
-let eatRefused=false;
-let drinkRefused=false;
-let mobilised=false;
-let supported=false;
-let restless=false;
-let loud=false;
-let medication=false;
-let fall=false;
-
-/* Analyse */
-words.forEach(w=>{
-
-if(w.includes("allgemeinzustand") || w.includes("reduziert")) reduced=true;
-if(w.includes("stabil")) stable=true;
-if(w.includes("essen")) eatRefused=true;
-if(w.includes("trinken")) drinkRefused=true;
-if(w.includes("mobil")) mobilised=true;
-if(w.includes("hilfe") || w.includes("unterstützung")) supported=true;
-if(w.includes("unruhig")) restless=true;
-if(w.includes("laut") || w.includes("schrei")) loud=true;
-if(w.includes("medikament")) medication=true;
-if(w.includes("sturz")) fall=true;
-
-});
-
-/* Bericht */
-
 let report=[];
 
-report.push("Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen versorgt.");
+report.push("Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen betreut.");
 
-if(selectedCategory){
-report.push("Dokumentationsbereich: " + selectedCategory + ".");
-}
-
-if(reduced){
+/* Allgemeinzustand */
+if(input.includes("allgemeinzustand") || input.includes("reduziert")){
 report.push("Der Allgemeinzustand zeigte sich reduziert.");
 }
-
-if(stable){
+if(input.includes("stabil")){
 report.push("Der Allgemeinzustand zeigte sich vital stabil.");
 }
 
-if(eatRefused){
+/* Körperpflege */
+if(input.includes("dusche") || input.includes("duschen")){
+if(input.includes("nicht angenommen")){
+report.push("Die angebotene Körperpflege in Form des Duschens wurde nicht angenommen.");
+} else {
+report.push("Körperpflege in Form des Duschens wurde durchgeführt.");
+}
+}
+
+if(input.includes("teilwasch")){
+report.push("Teilwaschung wurde durchgeführt.");
+}
+
+/* Ernährung */
+if(input.includes("essen") && input.includes("nicht angenommen")){
 report.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen.");
 }
-
-if(drinkRefused){
+if(input.includes("trinken") && input.includes("nicht angenommen")){
 report.push("Die angebotene Flüssigkeitsaufnahme wurde nicht angenommen.");
 }
+if(input.includes("trinkmenge ausreichend")){
+report.push("Die Trinkmenge wurde als ausreichend dokumentiert.");
+}
 
-if(mobilised){
-if(supported){
-report.push("Die Mobilisation erfolgte unter Unterstützung.");
+/* Mobilität */
+if(input.includes("mobilisiert")){
+if(input.includes("hilfe") || input.includes("unterstützung")){
+report.push("Die Mobilisation erfolgte mit Unterstützung.");
 } else {
 report.push("Die Mobilisation erfolgte entsprechend vorhandener Ressourcen.");
 }
 }
+if(input.includes("bett")){
+report.push("Bewohner/in war überwiegend bettlägerig.");
+}
 
-if(restless){
+/* Verhalten */
+if(input.includes("unruhig")){
 report.push("Bewohner/in zeigte sich deutlich unruhig.");
 }
-
-if(loud){
+if(input.includes("laut") || input.includes("schrei")){
 report.push("Wiederholte Lautäußerungen wurden beobachtet.");
 }
+if(input.includes("desorientiert") || input.includes("verwirrt")){
+report.push("Bewohner/in zeigte sich zeitweise desorientiert.");
+}
 
-if(medication){
+/* Schmerz */
+if(input.includes("schmerz")){
+report.push("Schmerzangaben wurden dokumentiert.");
+}
+
+/* Medikation */
+if(input.includes("medikament")){
 report.push("Die Medikamentengabe erfolgte gemäß ärztlicher Verordnung.");
 }
 
-if(fall){
+/* Sturz */
+if(input.includes("sturz")){
 report.push("Ein Sturzereignis wurde dokumentiert. Eine entsprechende Beobachtung wurde eingeleitet.");
 }
 
+/* Abschluss */
 report.push("Weitere dokumentationsrelevante Auffälligkeiten zeigten sich nicht.");
 
 document.getElementById("output").value = report.join("\n\n");
@@ -254,8 +219,6 @@ alert("Bericht kopiert");
 function resetAll(){
 document.getElementById("keywords").value="";
 document.getElementById("output").value="";
-document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
-selectedCategory="";
 }
 
 /* Drag Widget */
