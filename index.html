@@ -2,29 +2,55 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Jenn AI</title>
+<title>JennAI</title>
 
 <style>
 body { margin:0; font-family:Arial; background:#f4f6fa; }
+
+/* ===== JennAI Floating Button ===== */
 
 #openBtn{
 position:fixed;
 bottom:20px;
 right:20px;
-width:55px;
-height:55px;
-background:#001a80;
-color:white;
-border:none;
+width:70px;
+height:70px;
+background:white;
 border-radius:50%;
 cursor:pointer;
-box-shadow:0 6px 20px rgba(0,0,0,0.25);
+box-shadow:0 8px 25px rgba(0,0,0,0.25);
 display:flex;
 align-items:center;
 justify-content:center;
-font-weight:bold;
+font-size:38px;
 z-index:1000;
+animation: float 3s ease-in-out infinite;
 }
+
+/* Schwebeanimation */
+@keyframes float{
+0% { transform: translateY(0px); }
+50% { transform: translateY(-6px); }
+100% { transform: translateY(0px); }
+}
+
+/* Winken */
+@keyframes wave{
+0% { transform: rotate(0deg); }
+20% { transform: rotate(15deg); }
+40% { transform: rotate(-10deg); }
+60% { transform: rotate(15deg); }
+80% { transform: rotate(-5deg); }
+100% { transform: rotate(0deg); }
+}
+
+.wave{
+display:inline-block;
+animation: wave 2s infinite;
+transform-origin: 70% 70%;
+}
+
+/* ===== Widget ===== */
 
 #widget{
 position:fixed;
@@ -51,6 +77,7 @@ padding:14px;
 cursor:move;
 font-weight:bold;
 border-radius:18px 18px 0 0;
+font-size:16px;
 }
 
 .content{
@@ -88,16 +115,22 @@ cursor:pointer;
 
 <body>
 
-<button id="openBtn">PB</button>
+<!-- JennAI Button -->
+<div id="openBtn" onclick="openWidget()">
+<span class="wave">👩‍⚕️</span>
+</div>
 
 <div id="widget">
-<div class="header" id="dragHeader">Pflegebericht Generator – MASTER PRO</div>
+
+<div class="header" id="dragHeader">JennAI – Pflegeassistenz</div>
+
 <div class="content">
 
-<textarea id="input" placeholder="Freitext eingeben..."></textarea>
+<h4>Freitext eingeben</h4>
+<textarea id="input" placeholder="z.B. az stark reduziert stuhl kontaminiert mobilisiert mit unterstützung"></textarea>
 
 <button class="generate" onclick="generate()">Bericht erstellen</button>
-<button class="copy" onclick="copyText()">Kopieren</button>
+<button class="copy" onclick="copyText()">Bericht kopieren</button>
 <button class="reset" onclick="resetAll()">Zurücksetzen</button>
 
 <textarea id="output"></textarea>
@@ -110,40 +143,28 @@ cursor:pointer;
 let widget=document.getElementById("widget");
 let openBtn=document.getElementById("openBtn");
 
-openBtn.onclick=function(){
+function openWidget(){
 widget.style.display="flex";
 openBtn.style.display="none";
-};
+}
+
+/* ===== Neutralisierungs Engine ===== */
 
 function normalize(input){
 
 const replacements = {
 
-/* Allgemeinzustand */
 "scheisse":"stark reduziert",
 "mies":"reduziert",
 "katastrophe":"stark reduziert",
-"extrem schlecht":"stark reduziert",
 "am ende":"erschöpft",
 "total fertig":"erschöpft",
-"fix und fertig":"erschöpft",
-
-/* Essen */
-"frisst nix":"nahrungsaufnahme nicht angenommen",
 "isst nix":"nahrungsaufnahme nicht angenommen",
-"will nicht essen":"nahrungsaufnahme nicht angenommen",
-
-/* Trinken */
 "trinkt nix":"flüssigkeitsaufnahme nicht angenommen",
-
-/* Verhalten */
-"schreit rum":"lautäußerungen",
-"rastet aus":"herausforderndes verhalten",
-"aggressiv":"herausforderndes verhalten",
-
-/* Ausscheidung */
 "stuhl überall":"stuhl kontaminiert",
 "urin überall":"harn kontaminiert",
+"schreit rum":"lautäußerungen",
+"aggressiv":"herausforderndes verhalten"
 
 };
 
@@ -163,7 +184,6 @@ input=normalize(input);
 let r=[];
 r.push("Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen betreut.");
 
-/* AZ */
 if(input.includes("stark reduziert"))
 r.push("Der Allgemeinzustand zeigte sich stark reduziert.");
 else if(input.includes("reduziert"))
@@ -172,28 +192,29 @@ r.push("Der Allgemeinzustand zeigte sich reduziert.");
 if(input.includes("erschöpft"))
 r.push("Bewohner/in wirkte deutlich erschöpft.");
 
-/* Ernährung */
-if(input.includes("nahrungsaufnahme nicht angenommen"))
-r.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen.");
-
-if(input.includes("flüssigkeitsaufnahme nicht angenommen"))
-r.push("Die angebotene Flüssigkeitsaufnahme wurde nicht angenommen.");
-
-/* Verhalten */
-if(input.includes("lautäußerungen"))
-r.push("Wiederholte Lautäußerungen wurden beobachtet.");
-
-if(input.includes("herausforderndes verhalten"))
-r.push("Herausforderndes Verhalten wurde beobachtet.");
-
-/* Ausscheidung */
 if(input.includes("stuhl kontaminiert"))
 r.push("Es zeigte sich eine Stuhlkontamination.");
 
 if(input.includes("harn kontaminiert"))
 r.push("Es zeigte sich eine Harnkontamination.");
 
-/* Abschluss */
+if(input.includes("nahrungsaufnahme nicht angenommen"))
+r.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen.");
+
+if(input.includes("flüssigkeitsaufnahme nicht angenommen"))
+r.push("Die angebotene Flüssigkeitsaufnahme wurde nicht angenommen.");
+
+if(input.includes("mobilisiert") && input.includes("unterstützung"))
+r.push("Die Mobilisation erfolgte mit Unterstützung.");
+else if(input.includes("mobilisiert"))
+r.push("Die Mobilisation erfolgte entsprechend vorhandener Ressourcen.");
+
+if(input.includes("lautäußerungen"))
+r.push("Wiederholte Lautäußerungen wurden beobachtet.");
+
+if(input.includes("herausforderndes verhalten"))
+r.push("Herausforderndes Verhalten wurde beobachtet.");
+
 r.push("Weitere dokumentationsrelevante Auffälligkeiten zeigten sich nicht.");
 
 document.getElementById("output").value=r.join("\n\n");
@@ -211,7 +232,8 @@ document.getElementById("input").value="";
 document.getElementById("output").value="";
 }
 
-/* Drag */
+/* ===== Drag Widget ===== */
+
 let dragItem=document.getElementById("widget");
 let dragHeader=document.getElementById("dragHeader");
 let offsetX, offsetY, isDown=false;
