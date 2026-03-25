@@ -1,17 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>JennAI</title>
+<title>JennAI – Digitale Pflegeassistenz</title>
 
 <style>
 body{
 margin:0;
-font-family:Arial, sans-serif;
+font-family:Arial;
 background:#eef2f7;
 }
-
-/* ===== JennAI Floating Nurse ===== */
 
 #openBtn{
 position:fixed;
@@ -19,85 +17,65 @@ bottom:20px;
 right:20px;
 font-size:48px;
 cursor:pointer;
-z-index:1000;
 animation: float 3s ease-in-out infinite;
 filter: drop-shadow(0px 6px 12px rgba(0,0,0,0.3));
 }
 
-/* Schwebeeffekt */
 @keyframes float{
-0% { transform: translateY(0px); }
-50% { transform: translateY(-8px); }
-100% { transform: translateY(0px); }
+0%{transform:translateY(0px);}
+50%{transform:translateY(-8px);}
+100%{transform:translateY(0px);}
 }
-
-/* Winken */
-@keyframes wave{
-0% { transform: rotate(0deg); }
-20% { transform: rotate(15deg); }
-40% { transform: rotate(-10deg); }
-60% { transform: rotate(15deg); }
-80% { transform: rotate(-5deg); }
-100% { transform: rotate(0deg); }
-}
-
-.wave{
-display:inline-block;
-animation: wave 2.5s infinite;
-transform-origin: 70% 70%;
-}
-
-/* ===== JennAI Window ===== */
 
 #widget{
 position:fixed;
 bottom:20px;
 right:20px;
-width:520px;
-height:600px;
+width:540px;
+height:640px;
 min-width:420px;
-min-height:480px;
+min-height:500px;
 background:white;
 border-radius:14px;
 box-shadow:0 20px 60px rgba(0,0,0,0.35);
 display:none;
 flex-direction:column;
-resize:both;
 overflow:auto;
-z-index:1001;
 border:1px solid #d0d7e2;
 }
 
-/* Header */
 .header{
-background:linear-gradient(90deg,#0f4c81,#1f6fb2);
+background:#0f4c81;
 color:white;
 padding:12px;
 cursor:move;
 font-weight:bold;
-border-radius:14px 14px 0 0;
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
 
-/* Content */
+.closeBtn{
+cursor:pointer;
+font-size:18px;
+}
+
 .content{
 padding:14px;
 flex:1;
 overflow:auto;
 }
 
-/* Inputs */
 textarea{
 width:100%;
-height:140px;
+height:150px;
 border-radius:8px;
 border:1px solid #c9d3e0;
 padding:8px;
 margin-top:8px;
 resize:none;
-font-size:14px;
 }
 
-/* Buttons */
 button{
 width:100%;
 padding:10px;
@@ -108,40 +86,25 @@ font-weight:bold;
 cursor:pointer;
 }
 
-.generate{
-background:#0f4c81;
-color:white;
-}
-
-.copy{
-background:#27ae60;
-color:white;
-}
-
-.reset{
-background:#c0392b;
-color:white;
-}
-
+.generate{background:#0f4c81;color:white;}
+.copy{background:#27ae60;color:white;}
+.reset{background:#c0392b;color:white;}
 </style>
 </head>
 
 <body>
 
-<!-- JennAI floating nurse -->
-<div id="openBtn" onclick="openWidget()">
-<span class="wave">👩‍⚕️</span>
-</div>
+<div id="openBtn" onclick="openWidget()">👩‍⚕️</div>
 
 <div id="widget">
-
 <div class="header" id="dragHeader">
-JennAI – Digitale Pflegeassistenz
+<span>JennAI – Digitale Pflegeassistenz</span>
+<span class="closeBtn" onclick="closeWidget()">✖</span>
 </div>
 
 <div class="content">
 
-<textarea id="input" placeholder="Freitext eingeben z.B. az scheisse stuhl überall mobilisiert mit unterstützung"></textarea>
+<textarea id="input" placeholder="Freitext eingeben..."></textarea>
 
 <button class="generate" onclick="generate()">Bericht erstellen</button>
 <button class="copy" onclick="copyText()">Bericht kopieren</button>
@@ -154,98 +117,173 @@ JennAI – Digitale Pflegeassistenz
 
 <script>
 
-/* Öffnen */
+/* ================= OPEN / CLOSE ================= */
 function openWidget(){
 document.getElementById("widget").style.display="flex";
 document.getElementById("openBtn").style.display="none";
 }
 
-/* Neutralisierungs Engine */
-function normalize(input){
-
-const replacements = {
-
-"scheisse":"stark reduziert",
-"mies":"reduziert",
-"katastrophe":"stark reduziert",
-"total fertig":"erschöpft",
-"am ende":"erschöpft",
-"stuhl überall":"stuhl kontaminiert",
-"urin überall":"harn kontaminiert",
-"isst nix":"nahrungsaufnahme nicht angenommen",
-"trinkt nix":"flüssigkeitsaufnahme nicht angenommen",
-"schreit rum":"lautäußerungen",
-"aggressiv":"herausforderndes verhalten"
-
-};
-
-for (let key in replacements){
-let regex = new RegExp(key,"g");
-input = input.replace(regex,replacements[key]);
+function closeWidget(){
+document.getElementById("widget").style.display="none";
+document.getElementById("openBtn").style.display="block";
 }
 
-return input;
+/* ================= NORMALISIERUNG ================= */
+function normalize(text){
+
+text = text.toLowerCase();
+
+/* Umgangssprache */
+text = text.replace(/scheiße|scheisse|kacke|mies/g,"stark reduziert");
+text = text.replace(/\baz\b/g,"allgemeinzustand");
+
+/* Pflege allgemein */
+text = text.replace(/isst|iss/g,"essen");
+text = text.replace(/trinkt|getrunken/g,"trinken");
+
+/* Körperpflege */
+text = text.replace(/dusche|duschn|geduscht/g,"duschen");
+text = text.replace(/waschen|gewaschen/g,"körperpflege");
+text = text.replace(/intim/g,"intimpflege");
+
+/* Ausscheidung */
+text = text.replace(/eingekotet|stuhl überall/g,"stuhl kontaminiert");
+text = text.replace(/eingenässt|urin überall/g,"harn kontaminiert");
+text = text.replace(/verstopfung/g,"obstipation");
+text = text.replace(/dünnstuhl/g,"durchfall");
+
+/* Verhalten */
+text = text.replace(/schreit|brüllt/g,"lautäußerungen");
+text = text.replace(/aggressiv|schlägt/g,"herausforderndes verhalten");
+text = text.replace(/verwirrt/g,"desorientiert");
+
+/* Mobilität */
+text = text.replace(/aufgestanden|aufstehen/g,"mobilisiert");
+text = text.replace(/hilfe/g,"unterstützung");
+text = text.replace(/liegt nur im bett/g,"bettlägerig");
+
+/* Ernährung */
+text = text.replace(/nicht gegessen/g,"essen nicht angenommen");
+text = text.replace(/nicht getrunken/g,"trinken nicht angenommen");
+text = text.replace(/wenig getrunken/g,"trinkmenge reduziert");
+text = text.replace(/gut getrunken/g,"trinkmenge ausreichend");
+
+/* Haut */
+text = text.replace(/wund/g,"wunde");
+text = text.replace(/rot/g,"rötung");
+
+/* Schmerz */
+text = text.replace(/hat schmerzen/g,"schmerz");
+text = text.replace(/keine schmerzen/g,"schmerzfrei");
+
+/* Atmung */
+text = text.replace(/kurzatmig/g,"atemnot");
+
+/* Vital */
+text = text.replace(/blutdruck/g,"rr");
+text = text.replace(/herzschlag/g,"puls");
+text = text.replace(/fieber/g,"temperatur");
+
+/* Schlaf */
+text = text.replace(/gut geschlafen/g,"durchgeschlafen");
+text = text.replace(/oft wach/g,"mehrfach wach");
+
+/* Medikation */
+text = text.replace(/medis|tabletten/g,"medikament");
+
+return text;
 }
 
+/* ================= GENERATOR ================= */
 function generate(){
 
-let input=document.getElementById("input").value.toLowerCase();
+let input=document.getElementById("input").value;
 input=normalize(input);
 
 let r=[];
 r.push("Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen betreut.");
 
+/* Zustand */
 if(input.includes("stark reduziert"))
 r.push("Der Allgemeinzustand zeigte sich stark reduziert.");
 else if(input.includes("reduziert"))
 r.push("Der Allgemeinzustand zeigte sich reduziert.");
+if(input.includes("stabil"))
+r.push("Der Allgemeinzustand zeigte sich vital stabil.");
 
-if(input.includes("erschöpft"))
-r.push("Bewohner/in wirkte deutlich erschöpft.");
+/* Orientierung */
+if(input.includes("desorientiert"))
+r.push("Bewohner/in zeigte sich desorientiert.");
+else if(input.includes("orientiert"))
+r.push("Bewohner/in war orientiert.");
 
-if(input.includes("stuhl kontaminiert"))
-r.push("Es zeigte sich eine Stuhlkontamination.");
+/* Pflege */
+if(input.includes("duschen") && input.includes("nicht angenommen"))
+r.push("Die angebotene Körperpflege wurde nicht angenommen.");
+else if(input.includes("duschen"))
+r.push("Die Körperpflege wurde durchgeführt.");
 
-if(input.includes("harn kontaminiert"))
-r.push("Es zeigte sich eine Harnkontamination.");
-
-if(input.includes("nahrungsaufnahme nicht angenommen"))
-r.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen.");
-
-if(input.includes("flüssigkeitsaufnahme nicht angenommen"))
-r.push("Die angebotene Flüssigkeitsaufnahme wurde nicht angenommen.");
-
+/* Mobilität */
 if(input.includes("mobilisiert") && input.includes("unterstützung"))
 r.push("Die Mobilisation erfolgte mit Unterstützung.");
 else if(input.includes("mobilisiert"))
 r.push("Die Mobilisation erfolgte entsprechend vorhandener Ressourcen.");
+if(input.includes("bettlägerig"))
+r.push("Bewohner/in war überwiegend bettlägerig.");
 
+/* Ausscheidung */
+if(input.includes("stuhl kontaminiert"))
+r.push("Es zeigte sich eine Stuhlkontamination.");
+if(input.includes("harn kontaminiert"))
+r.push("Es zeigte sich eine Harnkontamination.");
+
+/* Ernährung */
+if(input.includes("essen nicht angenommen"))
+r.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen.");
+if(input.includes("trinken nicht angenommen"))
+r.push("Die angebotene Flüssigkeitsaufnahme wurde nicht angenommen.");
+if(input.includes("trinkmenge ausreichend"))
+r.push("Die Trinkmenge wurde als ausreichend dokumentiert.");
+if(input.includes("trinkmenge reduziert"))
+r.push("Die Trinkmenge zeigte sich reduziert.");
+
+/* Schmerz */
+if(input.includes("schmerzfrei"))
+r.push("Bewohner/in gab keine Schmerzen an.");
+else if(input.includes("schmerz"))
+r.push("Schmerzangaben wurden dokumentiert.");
+
+/* Verhalten */
 if(input.includes("lautäußerungen"))
 r.push("Wiederholte Lautäußerungen wurden beobachtet.");
-
 if(input.includes("herausforderndes verhalten"))
 r.push("Herausforderndes Verhalten wurde beobachtet.");
 
+/* Abschluss */
 r.push("Weitere dokumentationsrelevante Auffälligkeiten zeigten sich nicht.");
+
+/* Duplikate entfernen */
+r=[...new Set(r)];
 
 document.getElementById("output").value=r.join("\n\n");
 }
 
-/* Copy */
+/* ================= COPY ================= */
 function copyText(){
-let out=document.getElementById("output");
-out.select();
-document.execCommand("copy");
-alert("Bericht kopiert");
+let text=document.getElementById("output").value;
+
+navigator.clipboard.writeText(text)
+.then(()=>alert("Bericht kopiert"))
+.catch(()=>alert("Kopieren fehlgeschlagen"));
 }
 
-/* Reset */
+/* ================= RESET ================= */
 function resetAll(){
 document.getElementById("input").value="";
 document.getElementById("output").value="";
 }
 
-/* Drag Window */
+/* ================= DRAG ================= */
 let dragItem=document.getElementById("widget");
 let dragHeader=document.getElementById("dragHeader");
 let offsetX, offsetY, isDown=false;
