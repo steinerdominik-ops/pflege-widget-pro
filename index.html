@@ -7,7 +7,7 @@
 <style>
 body { margin:0; font-family:Arial; background:#f4f6fa; }
 
-/* ===== Floating Button ===== */
+/* ================= FLOATING BUTTON ================= */
 
 #openBtn{
 position:fixed;
@@ -28,14 +28,14 @@ justify-content:center;
 z-index:1000;
 }
 
-/* ===== Widget ===== */
+/* ================= WIDGET ================= */
 
 #widget{
 position:fixed;
 bottom:20px;
 right:20px;
-width:450px;
-height:650px;
+width:470px;
+height:680px;
 background:white;
 border-radius:18px;
 box-shadow:0 15px 50px rgba(0,0,0,0.3);
@@ -80,7 +80,7 @@ color:white;
 
 textarea{
 width:100%;
-height:90px;
+height:100px;
 margin-top:8px;
 border-radius:8px;
 border:1px solid #ccc;
@@ -128,7 +128,7 @@ font-weight:bold;
 <div class="option" onclick="selectCategory(this)">Sturzereignis</div>
 
 <h4>Stichwörter (mit Komma trennen)</h4>
-<textarea id="keywords" placeholder="z.B. mit Unterstützung, vital stabil, mobilisiert, Trinkmenge ausreichend"></textarea>
+<textarea id="keywords" placeholder="z.B. AZ schlecht, verweigert Essen, sehr unruhig"></textarea>
 
 <button class="generate" onclick="generate()">Bericht generieren</button>
 <button class="copy" onclick="copyText()">Bericht kopieren</button>
@@ -141,21 +141,21 @@ font-weight:bold;
 
 <script>
 
-/* ================= BASIC SETUP ================= */
+/* ================= SETUP ================= */
 
 let mode="standard";
 let selectedCategory="";
 let widget=document.getElementById("widget");
 let openBtn=document.getElementById("openBtn");
 
-/* ================= OPEN / CLOSE ================= */
+/* ================= OPEN ================= */
 
 openBtn.onclick=function(){
 widget.style.display="flex";
 openBtn.style.display="none";
 };
 
-/* ================= MODE SWITCH ================= */
+/* ================= MODE ================= */
 
 function toggleMode(){
 mode = mode==="standard" ? "schnell" : "standard";
@@ -172,13 +172,25 @@ selectedCategory=el.innerText;
 
 /* ================= GENERATOR ================= */
 
-function random(arr){
-return arr[Math.floor(Math.random()*arr.length)];
-}
-
 function generate(){
 
-let words=document.getElementById("keywords").value
+let rawInput=document.getElementById("keywords").value;
+
+/* --- BASIS-RECHTSCHREIB & NEUTRALISIERUNG --- */
+
+rawInput=rawInput
+.replace(/az/gi,"Allgemeinzustand")
+.replace(/schlecht/gi,"reduziert")
+.replace(/sehr/gi,"deutlich")
+.replace(/viel/gi,"wiederholt")
+.replace(/nix/gi,"nicht")
+.replace(/verweigert/gi,"nicht angenommen")
+.replace(/will nicht/gi,"lehnt ab")
+.replace(/isst/gi,"isst");
+
+/* --- KEYWORDS --- */
+
+let words=rawInput
 .split(",")
 .map(w=>w.trim().toLowerCase())
 .filter(w=>w!="");
@@ -188,91 +200,84 @@ document.getElementById("output").value="Bitte Kategorie auswählen.";
 return;
 }
 
-/* Intro */
+/* --- TEXTBAUSTEINE --- */
 
-let intro = "Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen versorgt.";
+let intro="Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen versorgt.";
+let condition="", nutrition="", mobility="", behavior="", medication="", event="", other="";
 
-/* Textbausteine */
+words.forEach(word=>{
 
-let support="", mobility="", nutrition="", condition="", medication="", event="", other="";
+if(word.includes("allgemeinzustand") || word.includes("reduziert")){
+condition="Der Allgemeinzustand zeigte sich reduziert.";
+}
 
-/* Keyword-Logik */
-
-words.forEach(word => {
-
-switch(word){
-
-case "mit unterstützung":
-support="Die Durchführung erfolgte mit Unterstützung.";
-break;
-
-case "selbstständig":
-support="Die Maßnahmen wurden selbstständig umgesetzt.";
-break;
-
-case "mobilisiert":
-mobility="Mobilisation erfolgte entsprechend vorhandener Ressourcen.";
-break;
-
-case "transfer":
-mobility="Transfer wurde unter Einhaltung der Sicherheitsmaßnahmen durchgeführt.";
-break;
-
-case "trinkmenge ausreichend":
-nutrition="Die Trinkmenge wurde als ausreichend dokumentiert.";
-break;
-
-case "appetitgerecht gegessen":
-nutrition="Nahrungsaufnahme erfolgte appetitgerecht.";
-break;
-
-case "vital stabil":
+else if(word.includes("vital stabil")){
 condition="Der Allgemeinzustand zeigte sich vital stabil.";
-break;
+}
 
-case "wach und orientiert":
-condition="Bewohner/in war wach und orientiert.";
-break;
+else if(word.includes("nicht angenommen") && word.includes("essen")){
+nutrition="Nahrungsaufnahme wurde angeboten, jedoch nicht angenommen.";
+}
 
-case "unruhig":
-condition="Bewohner/in zeigte sich zeitweise unruhig.";
-break;
+else if(word.includes("nicht angenommen") && word.includes("trinken")){
+nutrition+=" Flüssigkeitsaufnahme wurde angeboten, jedoch nicht angenommen.";
+}
 
-case "medikamente":
+else if(word.includes("trinkmenge ausreichend")){
+nutrition="Die Trinkmenge wurde als ausreichend dokumentiert.";
+}
+
+else if(word.includes("mobilisiert")){
+mobility="Mobilisation erfolgte entsprechend vorhandener Ressourcen.";
+}
+
+else if(word.includes("mit unterstützung")){
+mobility="Maßnahmen erfolgten mit Unterstützung.";
+}
+
+else if(word.includes("unruhig")){
+behavior="Bewohner/in zeigte sich deutlich unruhig.";
+}
+
+else if(word.includes("schreit") || word.includes("laut")){
+behavior+=" Wiederholte Lautäußerungen wurden beobachtet.";
+}
+
+else if(word.includes("medikament")){
 medication="Medikamentengabe erfolgte gemäß ärztlicher Verordnung.";
-break;
+}
 
-case "sturz":
+else if(word.includes("sturz")){
 event="Ein Sturzereignis wurde dokumentiert. Beobachtung eingeleitet.";
-break;
+}
 
-default:
-other += word.charAt(0).toUpperCase() + word.slice(1) + ". ";
+else{
+other+=word.charAt(0).toUpperCase()+word.slice(1)+". ";
 }
 
 });
 
-/* Textaufbau */
+/* --- TEXTAUFBAU --- */
 
 let finalText="";
 
 if(mode==="standard"){
-finalText += intro + "\n\n";
+finalText+=intro+"\n\n";
 }
 
 if(selectedCategory && mode==="standard"){
-finalText += "Kategorie: " + selectedCategory + ".\n\n";
+finalText+="Kategorie: "+selectedCategory+".\n\n";
 }
 
-if(support) finalText += support + "\n";
-if(mobility) finalText += mobility + "\n";
-if(nutrition) finalText += nutrition + "\n";
-if(condition) finalText += condition + "\n";
-if(medication) finalText += medication + "\n";
-if(event) finalText += event + "\n";
-if(other) finalText += other + "\n";
+if(condition) finalText+=condition+"\n";
+if(nutrition) finalText+=nutrition+"\n";
+if(mobility) finalText+=mobility+"\n";
+if(behavior) finalText+=behavior+"\n";
+if(medication) finalText+=medication+"\n";
+if(event) finalText+=event+"\n";
+if(other) finalText+=other+"\n";
 
-finalText += "\nEs zeigten sich keine weiteren dokumentationsrelevanten Auffälligkeiten.";
+finalText+="\nEs zeigten sich keine weiteren dokumentationsrelevanten Auffälligkeiten.";
 
 document.getElementById("output").value=finalText;
 
@@ -302,17 +307,17 @@ let dragItem=document.getElementById("widget");
 let dragHeader=document.getElementById("dragHeader");
 let offsetX, offsetY, isDown=false;
 
-dragHeader.addEventListener("mousedown", function(e){
+dragHeader.addEventListener("mousedown",function(e){
 isDown=true;
 offsetX=dragItem.offsetLeft - e.clientX;
 offsetY=dragItem.offsetTop - e.clientY;
 });
 
-document.addEventListener("mouseup", function(){
+document.addEventListener("mouseup",function(){
 isDown=false;
 });
 
-document.addEventListener("mousemove", function(e){
+document.addEventListener("mousemove",function(e){
 if(!isDown) return;
 dragItem.style.left=(e.clientX + offsetX)+"px";
 dragItem.style.top=(e.clientY + offsetY)+"px";
@@ -324,13 +329,13 @@ dragItem.style.right="auto";
 
 let btnOffsetX, btnOffsetY, btnDown=false;
 
-openBtn.addEventListener("mousedown", function(e){
+openBtn.addEventListener("mousedown",function(e){
 btnDown=true;
-btnOffsetX = openBtn.offsetLeft - e.clientX;
-btnOffsetY = openBtn.offsetTop - e.clientY;
+btnOffsetX=openBtn.offsetLeft - e.clientX;
+btnOffsetY=openBtn.offsetTop - e.clientY;
 });
 
-document.addEventListener("mousemove", function(e){
+document.addEventListener("mousemove",function(e){
 if(!btnDown) return;
 openBtn.style.left=(e.clientX + btnOffsetX)+"px";
 openBtn.style.top=(e.clientY + btnOffsetY)+"px";
@@ -338,7 +343,7 @@ openBtn.style.bottom="auto";
 openBtn.style.right="auto";
 });
 
-document.addEventListener("mouseup", function(){
+document.addEventListener("mouseup",function(){
 btnDown=false;
 });
 
