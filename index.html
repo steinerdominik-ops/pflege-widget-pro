@@ -2,24 +2,33 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pflegebericht PRO V5</title>
+<title>Pflegebericht FINAL</title>
 
 <style>
 body { margin:0; font-family:Arial; background:#f4f6fa; }
+
+/* ================= BUTTON ================= */
 
 #openBtn{
 position:fixed;
 bottom:20px;
 right:20px;
+width:55px;
+height:55px;
 background:#0050ff;
 color:white;
-padding:14px 20px;
 border:none;
-border-radius:50px;
+border-radius:50%;
 cursor:pointer;
-box-shadow:0 5px 20px rgba(0,0,0,0.2);
+box-shadow:0 5px 20px rgba(0,0,0,0.25);
+font-weight:bold;
+display:flex;
+align-items:center;
+justify-content:center;
 z-index:1000;
 }
+
+/* ================= WIDGET ================= */
 
 #widget{
 position:fixed;
@@ -93,7 +102,7 @@ font-weight:bold;
 
 <body>
 
-<button id="openBtn" onclick="openWidget()">Pflegebericht</button>
+<button id="openBtn">PB</button>
 
 <div id="widget">
 
@@ -124,25 +133,34 @@ font-weight:bold;
 
 <script>
 
+/* ================= MODUS ================= */
+
 let mode="standard";
 let selectedCategory="";
 let widget=document.getElementById("widget");
+let openBtn=document.getElementById("openBtn");
 
-function openWidget(){
+openBtn.onclick=function(){
 widget.style.display="flex";
-document.getElementById("openBtn").style.display="none";
-}
+openBtn.style.display="none";
+};
+
+/* ================= MODUS WECHSEL ================= */
 
 function toggleMode(){
 mode = mode==="standard" ? "schnell" : "standard";
 alert("Aktueller Modus: "+mode);
 }
 
+/* ================= KATEGORIE ================= */
+
 function selectCategory(el){
 document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
 el.classList.add("selected");
 selectedCategory=el.innerText;
 }
+
+/* ================= GENERATOR ================= */
 
 function random(arr){
 return arr[Math.floor(Math.random()*arr.length)];
@@ -192,6 +210,8 @@ text+=random(neutralEnd);
 document.getElementById("output").value=text;
 }
 
+/* ================= COPY ================= */
+
 function copyText(){
 let out=document.getElementById("output");
 out.select();
@@ -199,12 +219,16 @@ document.execCommand("copy");
 alert("Bericht kopiert");
 }
 
+/* ================= RESET ================= */
+
 function resetAll(){
 document.getElementById("keywords").value="";
 document.getElementById("output").value="";
 document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
 selectedCategory="";
 }
+
+/* ================= DRAG WIDGET ================= */
 
 let dragItem=document.getElementById("widget");
 let dragHeader=document.getElementById("dragHeader");
@@ -226,6 +250,28 @@ dragItem.style.left=(e.clientX + offsetX)+"px";
 dragItem.style.top=(e.clientY + offsetY)+"px";
 dragItem.style.bottom="auto";
 dragItem.style.right="auto";
+});
+
+/* ================= DRAG BUTTON ================= */
+
+let btnOffsetX, btnOffsetY, btnDown=false;
+
+openBtn.addEventListener("mousedown", function(e){
+btnDown=true;
+btnOffsetX = openBtn.offsetLeft - e.clientX;
+btnOffsetY = openBtn.offsetTop - e.clientY;
+});
+
+document.addEventListener("mousemove", function(e){
+if(!btnDown) return;
+openBtn.style.left=(e.clientX + btnOffsetX)+"px";
+openBtn.style.top=(e.clientY + btnOffsetY)+"px";
+openBtn.style.bottom="auto";
+openBtn.style.right="auto";
+});
+
+document.addEventListener("mouseup", function(){
+btnDown=false;
 });
 
 </script>
