@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pflegebericht PRO V4</title>
+<title>Pflegebericht PRO V5</title>
 
 <style>
 body { margin:0; font-family:Arial; background:#f4f6fa; }
@@ -11,37 +11,36 @@ body { margin:0; font-family:Arial; background:#f4f6fa; }
 position:fixed;
 bottom:20px;
 right:20px;
-background:#0047ff;
+background:#0050ff;
 color:white;
-padding:15px 22px;
+padding:14px 20px;
 border:none;
 border-radius:50px;
 cursor:pointer;
 box-shadow:0 5px 20px rgba(0,0,0,0.2);
+z-index:1000;
 }
 
 #widget{
 position:fixed;
-bottom:0;
+bottom:20px;
 right:20px;
-width:430px;
-height:620px;
+width:420px;
+height:600px;
 background:white;
-border-radius:20px 20px 0 0;
-box-shadow:0 -10px 40px rgba(0,0,0,0.25);
-transform:translateY(100%);
-transition:0.4s ease;
-display:flex;
+border-radius:18px;
+box-shadow:0 10px 40px rgba(0,0,0,0.25);
+display:none;
 flex-direction:column;
+z-index:1001;
 }
 
-#widget.active{ transform:translateY(0); }
-
 .header{
-background:#0047ff;
+background:#0050ff;
 color:white;
-padding:16px;
-border-radius:20px 20px 0 0;
+padding:14px;
+cursor:move;
+border-radius:18px 18px 0 0;
 font-weight:bold;
 }
 
@@ -51,27 +50,40 @@ overflow:auto;
 flex:1;
 }
 
+.option{
+padding:8px;
+margin:5px 0;
+border:1px solid #ddd;
+border-radius:8px;
+cursor:pointer;
+}
+
+.option.selected{
+background:#0050ff;
+color:white;
+}
+
 textarea{
 width:100%;
-height:120px;
-margin-top:10px;
+height:80px;
+margin-top:8px;
 border-radius:8px;
 border:1px solid #ccc;
-padding:8px;
+padding:6px;
 resize:none;
 }
 
 button{
-padding:10px;
+padding:8px;
 border:none;
 border-radius:8px;
-margin-top:8px;
+margin-top:6px;
 width:100%;
 cursor:pointer;
 font-weight:bold;
 }
 
-.generate{ background:#0047ff; color:white; }
+.generate{ background:#0050ff; color:white; }
 .copy{ background:#2ecc71; color:white; }
 .reset{ background:#e74c3c; color:white; }
 .mode{ background:#555; color:white; }
@@ -81,24 +93,31 @@ font-weight:bold;
 
 <body>
 
-<button id="openBtn" onclick="toggleWidget()">Pflegebericht</button>
+<button id="openBtn" onclick="openWidget()">Pflegebericht</button>
 
 <div id="widget">
 
-<div class="header">Pflegebericht Generator PRO V4</div>
+<div class="header" id="dragHeader">Pflegebericht Generator</div>
 
 <div class="content">
 
-<button class="mode" onclick="toggleMode()">Modus wechseln (Standard / Schnell)</button>
+<button class="mode" onclick="toggleMode()">Modus wechseln</button>
 
-<h4>Stichwörter (beliebige Sprache möglich)</h4>
-<textarea id="keywords" placeholder="z.B. assisted, stable, mobilized oder mit Unterstützung, vital stabil"></textarea>
+<h4>Kategorien</h4>
+
+<div class="option" onclick="selectCategory(this)">Allgemeiner Pflegebericht</div>
+<div class="option" onclick="selectCategory(this)">Essen & Trinken</div>
+<div class="option" onclick="selectCategory(this)">Medikamente</div>
+<div class="option" onclick="selectCategory(this)">Sturzereignis</div>
+
+<h4>Stichwörter</h4>
+<textarea id="keywords" placeholder="z.B. mit Unterstützung, vital stabil, mobilisiert"></textarea>
 
 <button class="generate" onclick="generate()">Bericht generieren</button>
 <button class="copy" onclick="copyText()">Bericht kopieren</button>
 <button class="reset" onclick="resetAll()">Zurücksetzen</button>
 
-<textarea id="output" placeholder="Hier erscheint der generierte Pflegebericht..."></textarea>
+<textarea id="output" placeholder="Hier erscheint der Pflegebericht..."></textarea>
 
 </div>
 </div>
@@ -106,9 +125,12 @@ font-weight:bold;
 <script>
 
 let mode="standard";
+let selectedCategory="";
+let widget=document.getElementById("widget");
 
-function toggleWidget(){
-document.getElementById("widget").classList.toggle("active");
+function openWidget(){
+widget.style.display="flex";
+document.getElementById("openBtn").style.display="none";
 }
 
 function toggleMode(){
@@ -116,39 +138,30 @@ mode = mode==="standard" ? "schnell" : "standard";
 alert("Aktueller Modus: "+mode);
 }
 
-function translate(word){
+function selectCategory(el){
+document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
+el.classList.add("selected");
+selectedCategory=el.innerText;
+}
 
-const dict={
-"assisted":"mit Unterstützung",
-"stable":"vital stabil",
-"mobilized":"mobilisiert",
-"ate well":"appetitgerecht gegessen",
-"drank":"Trinkmenge ausreichend",
-"fall":"Sturzereignis",
-"medication":"Medikamentengabe",
-"pain":"Schmerzangabe",
-"unrest":"unruhig",
-"oriented":"wach und orientiert"
-};
-
-return dict[word.toLowerCase()] || word;
+function random(arr){
+return arr[Math.floor(Math.random()*arr.length)];
 }
 
 function generate(){
 
-let words=document.getElementById("keywords").value
+let keywords=document.getElementById("keywords").value
 .split(",")
-.map(w=>w.trim())
-.filter(w=>w!="")
-.map(w=>translate(w));
+.map(k=>k.trim())
+.filter(k=>k!="");
 
 let intro=[
-"Bewohner/in wurde pflegerisch versorgt.",
-"Versorgung erfolgte planmäßig.",
-"Pflegehandlung sachgerecht durchgeführt."
+"Bewohner/in wurde im Rahmen der Pflege versorgt.",
+"Pflegehandlung wurde sachgerecht durchgeführt.",
+"Versorgung erfolgte planmäßig."
 ];
 
-let end=[
+let neutralEnd=[
 "Allgemeinzustand stabil.",
 "Keine Auffälligkeiten dokumentiert.",
 "Verlauf unauffällig."
@@ -158,20 +171,29 @@ let text="";
 
 if(mode==="schnell"){
 
-text="Bewohner/in: "+words.join(", ")+". "+end[Math.floor(Math.random()*end.length)];
+text="Bewohner/in: "+keywords.join(", ")+". "+random(neutralEnd);
 
 }else{
 
-text=intro[Math.floor(Math.random()*intro.length)]+" Beobachtet: "+words.join(", ")+". "+end[Math.floor(Math.random()*end.length)];
+if(selectedCategory===""){
+text="Bitte Kategorie auswählen.";
+}else{
 
+text=random(intro)+" Kategorie: "+selectedCategory+". ";
+
+if(keywords.length>0){
+text+="Beobachtet: "+keywords.join(", ")+". ";
+}
+
+text+=random(neutralEnd);
+}
 }
 
 document.getElementById("output").value=text;
-
 }
 
 function copyText(){
-const out=document.getElementById("output");
+let out=document.getElementById("output");
 out.select();
 document.execCommand("copy");
 alert("Bericht kopiert");
@@ -180,7 +202,31 @@ alert("Bericht kopiert");
 function resetAll(){
 document.getElementById("keywords").value="";
 document.getElementById("output").value="";
+document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
+selectedCategory="";
 }
+
+let dragItem=document.getElementById("widget");
+let dragHeader=document.getElementById("dragHeader");
+let offsetX, offsetY, isDown=false;
+
+dragHeader.addEventListener("mousedown", function(e){
+isDown=true;
+offsetX=dragItem.offsetLeft - e.clientX;
+offsetY=dragItem.offsetTop - e.clientY;
+});
+
+document.addEventListener("mouseup", function(){
+isDown=false;
+});
+
+document.addEventListener("mousemove", function(e){
+if(!isDown) return;
+dragItem.style.left=(e.clientX + offsetX)+"px";
+dragItem.style.top=(e.clientY + offsetY)+"px";
+dragItem.style.bottom="auto";
+dragItem.style.right="auto";
+});
 
 </script>
 
