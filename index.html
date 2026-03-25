@@ -5,80 +5,21 @@
 <title>JennAI – Digitale Pflegeassistenz</title>
 
 <style>
-body{
-margin:0;
-font-family:Arial;
-background:#eef2f7;
-}
-
-#openBtn{
-position:fixed;
-bottom:20px;
-right:20px;
-font-size:48px;
-cursor:pointer;
-animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float{
-0%{transform:translateY(0);}
-50%{transform:translateY(-8px);}
-100%{transform:translateY(0);}
-}
-
+body{margin:0;font-family:Arial;background:#eef2f7;}
+#openBtn{position:fixed;bottom:20px;right:20px;font-size:48px;cursor:pointer;}
 #widget{
-position:fixed;
-bottom:20px;
-right:20px;
-width:520px;
-height:620px;
-background:white;
-border-radius:12px;
-box-shadow:0 15px 40px rgba(0,0,0,0.3);
-display:none;
-flex-direction:column;
-overflow:hidden;
+position:fixed;bottom:20px;right:20px;width:520px;height:640px;
+background:white;border-radius:12px;box-shadow:0 15px 40px rgba(0,0,0,0.3);
+display:none;flex-direction:column;overflow:hidden;
 }
-
-.header{
-background:#0f4c81;
-color:white;
-padding:12px;
-display:flex;
-justify-content:space-between;
-cursor:move;
-font-weight:bold;
-}
-
-.content{
-padding:12px;
-flex:1;
-overflow:auto;
-}
-
-textarea{
-width:100%;
-height:140px;
-margin-top:8px;
-padding:8px;
-border-radius:6px;
-border:1px solid #ccc;
-resize:none;
-}
-
-button{
-width:100%;
-padding:10px;
-margin-top:8px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-font-weight:bold;
-}
-
+.header{background:#0f4c81;color:white;padding:12px;display:flex;justify-content:space-between;cursor:move;}
+.content{padding:12px;flex:1;overflow:auto;}
+textarea{width:100%;height:140px;margin-top:8px;padding:8px;border-radius:6px;border:1px solid #ccc;}
+button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
 .generate{background:#0f4c81;color:white;}
 .copy{background:#27ae60;color:white;}
 .reset{background:#c0392b;color:white;}
+.debug{font-size:12px;color:#555;margin-top:6px;white-space:pre-wrap;}
 </style>
 </head>
 
@@ -94,13 +35,14 @@ font-weight:bold;
 
 <div class="content">
 
-<textarea id="input" placeholder="Freitext eingeben..."></textarea>
+<textarea id="input" placeholder="Freitext eingeben... z.B. 'az schlecht, kaum getrunken, verwirrt'"></textarea>
 
 <button class="generate" onclick="generate()">Bericht erstellen</button>
 <button class="copy" onclick="copyText()">Bericht kopieren</button>
 <button class="reset" onclick="resetAll()">Zurücksetzen</button>
 
 <textarea id="output"></textarea>
+<div id="debug" class="debug"></div>
 
 </div>
 </div>
@@ -112,143 +54,154 @@ function openWidget(){
 document.getElementById("widget").style.display="flex";
 document.getElementById("openBtn").style.display="none";
 }
-
 function closeWidget(){
 document.getElementById("widget").style.display="none";
 document.getElementById("openBtn").style.display="block";
 }
 
+/* ================= SYNONYM SYSTEM ================= */
+const patterns = {
+
+zustand_stark: /\b(az|allgemeinzustand).*(schlecht|sehr schlecht|kritisch|mies)|stark reduziert/,
+zustand_mittel: /\b(az|allgemeinzustand).*(reduziert|eingeschränkt)|\breduziert\b/,
+zustand_gut: /\b(az|allgemeinzustand).*(gut|stabil)|\bstabil\b/,
+
+orientierung: /\b(verwirrt|desorientiert|orientierungslos)\b/,
+orientiert: /\borientiert\b/,
+
+mobil_hilfe: /\b(aufgestanden|mobilisiert).*(hilfe|unterstützung)\b/,
+mobil: /\b(aufgestanden|mobilisiert)\b/,
+bett: /\b(bettlägerig|liegt im bett)\b/,
+
+essen_nicht: /\b(nicht gegessen|essen verweigert|kaum gegessen)\b/,
+trinken_nicht: /\b(nicht getrunken|kaum getrunken)\b/,
+trinken_wenig: /\b(wenig getrunken)\b/,
+trinken_gut: /\b(gut getrunken|ausreichend getrunken)\b/,
+
+stuhl: /\b(eingekotet|stuhl überall)\b/,
+harn: /\b(eingenässt|urin überall)\b/,
+
+schmerzfrei: /\b(keine schmerzen)\b/,
+schmerz: /\b(schmerzen|schmerz)\b/,
+
+unruhe: /\b(unruhig)\b/,
+aggressiv: /\b(aggressiv|schlägt|tritt)\b/,
+
+husten: /\b(husten|hustet)\b/,
+atemnot: /\b(atemnot|kurzatmig)\b/
+};
+
 /* ================= GENERATOR ================= */
 function generate(){
 
 let input=document.getElementById("input").value.toLowerCase();
-
 let r=[];
+let debug=[];
+
 r.push("Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen betreut.");
 
-/* ================= ALLGEMEINZUSTAND ================= */
-if(/\bstark reduziert\b/.test(input))
+/* Zustand */
+if(patterns.zustand_stark.test(input)){
 r.push("Der Allgemeinzustand zeigte sich stark reduziert.");
-else if(/\breduziert\b/.test(input))
+debug.push("zustand: stark");
+}
+else if(patterns.zustand_mittel.test(input)){
 r.push("Der Allgemeinzustand zeigte sich reduziert.");
-else if(/\bstabil\b/.test(input))
+debug.push("zustand: reduziert");
+}
+else if(patterns.zustand_gut.test(input)){
 r.push("Der Allgemeinzustand zeigte sich stabil.");
+debug.push("zustand: stabil");
+}
 
-/* ================= ORIENTIERUNG ================= */
-if(/\bdesorientiert|verwirrt\b/.test(input))
+/* Orientierung */
+if(patterns.orientierung.test(input)){
 r.push("Bewohner/in zeigte sich desorientiert.");
-else if(/\borientiert\b/.test(input))
+debug.push("orientierung: desorientiert");
+}
+else if(patterns.orientiert.test(input)){
 r.push("Bewohner/in war orientiert.");
+}
 
-/* ================= KÖRPERPFLEGE ================= */
-if(/dusche|duschen/.test(input) && /nicht|verweigert/.test(input))
-r.push("Die angebotene Körperpflege wurde nicht angenommen.");
-else if(/dusche|duschen|gewaschen/.test(input))
-r.push("Die Körperpflege wurde durchgeführt.");
-
-/* ================= MOBILITÄT ================= */
-if(/mobilisiert|aufgestanden/.test(input) && /hilfe|unterstützung/.test(input))
+/* Mobilität */
+if(patterns.mobil_hilfe.test(input)){
 r.push("Die Mobilisation erfolgte mit Unterstützung.");
-else if(/mobilisiert|aufgestanden/.test(input))
+}
+else if(patterns.mobil.test(input)){
 r.push("Die Mobilisation erfolgte entsprechend vorhandener Ressourcen.");
-
-if(/bettlägerig|liegt im bett/.test(input))
+}
+if(patterns.bett.test(input)){
 r.push("Bewohner/in war überwiegend bettlägerig.");
+}
 
-/* ================= AUSSCHIEDUNG ================= */
-if(/eingekotet|stuhl überall/.test(input))
-r.push("Es zeigte sich eine Stuhlkontamination.");
-
-if(/eingenässt|urin überall/.test(input))
-r.push("Es zeigte sich eine Harnkontamination.");
-
-if(/verstopfung/.test(input))
-r.push("Hinweis auf Obstipation.");
-
-if(/durchfall/.test(input))
-r.push("Es zeigte sich Diarrhoe.");
-
-/* ================= ERNÄHRUNG ================= */
-if(/nicht.*gegessen|essen verweigert/.test(input))
+/* Ernährung */
+if(patterns.essen_nicht.test(input)){
 r.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen.");
-
-if(/nicht.*getrunken/.test(input))
+}
+if(patterns.trinken_nicht.test(input)){
 r.push("Die angebotene Flüssigkeitsaufnahme wurde nicht angenommen.");
-
-if(/gut.*getrunken/.test(input))
-r.push("Die Trinkmenge wurde als ausreichend dokumentiert.");
-
-if(/wenig.*getrunken/.test(input))
+}
+else if(patterns.trinken_wenig.test(input)){
 r.push("Die Trinkmenge zeigte sich reduziert.");
+}
+else if(patterns.trinken_gut.test(input)){
+r.push("Die Trinkmenge wurde als ausreichend dokumentiert.");
+}
 
-/* ================= HAUT ================= */
-if(/wunde|offene stelle/.test(input))
-r.push("Wundbeobachtung erfolgte.");
+/* Ausscheidung */
+if(patterns.stuhl.test(input)){
+r.push("Es zeigte sich eine Stuhlkontamination.");
+}
+if(patterns.harn.test(input)){
+r.push("Es zeigte sich eine Harnkontamination.");
+}
 
-if(/rötung|gerötet/.test(input))
-r.push("Rötungen wurden beobachtet.");
-
-/* ================= SCHMERZ ================= */
-if(/keine.*schmerzen/.test(input))
+/* Schmerz */
+if(patterns.schmerzfrei.test(input)){
 r.push("Bewohner/in gab keine Schmerzen an.");
-else if(/schmerzen|schmerz/.test(input))
+}
+else if(patterns.schmerz.test(input)){
 r.push("Schmerzangaben wurden dokumentiert.");
+}
 
-/* ================= ATMUNG ================= */
-if(/atemnot|kurzatmig/.test(input))
-r.push("Bewohner/in klagte über Atemnot.");
-
-if(/husten/.test(input))
-r.push("Husten wurde beobachtet.");
-
-/* ================= VITAL ================= */
-if(/blutdruck|rr/.test(input))
-r.push("Blutdruckkontrolle erfolgte.");
-
-if(/puls/.test(input))
-r.push("Pulskontrolle erfolgte.");
-
-if(/temperatur|fieber/.test(input))
-r.push("Temperaturkontrolle erfolgte.");
-
-/* ================= VERHALTEN ================= */
-if(/schreit|brüllt/.test(input))
-r.push("Wiederholte Lautäußerungen wurden beobachtet.");
-
-if(/aggressiv|schlägt/.test(input))
+/* Verhalten */
+if(patterns.unruhe.test(input)){
+r.push("Motorische Unruhe wurde beobachtet.");
+}
+if(patterns.aggressiv.test(input)){
 r.push("Herausforderndes Verhalten wurde beobachtet.");
+}
 
-/* ================= SCHLAF ================= */
-if(/durchgeschlafen/.test(input))
-r.push("Nachtruhe ohne Unterbrechung.");
+/* Atmung */
+if(patterns.atemnot.test(input)){
+r.push("Bewohner/in klagte über Atemnot.");
+}
+if(patterns.husten.test(input)){
+r.push("Husten wurde beobachtet.");
+}
 
-if(/mehrfach wach|oft wach/.test(input))
-r.push("Bewohner/in war mehrfach wach.");
-
-/* ================= MEDIKATION ================= */
-if(/medikament|tablette|medis/.test(input))
-r.push("Die Medikamentengabe erfolgte gemäß ärztlicher Verordnung.");
-
-/* ================= ABSCHLUSS ================= */
+/* Abschluss */
 r.push("Weitere dokumentationsrelevante Auffälligkeiten zeigten sich nicht.");
 
-/* Duplikate entfernen */
 r=[...new Set(r)];
 
 document.getElementById("output").value=r.join("\n\n");
+
+/* Debug anzeigen */
+document.getElementById("debug").innerText="DEBUG:\n"+debug.join("\n");
 }
 
 /* ================= COPY ================= */
 function copyText(){
-let text=document.getElementById("output").value;
-navigator.clipboard.writeText(text);
+navigator.clipboard.writeText(document.getElementById("output").value);
 alert("Bericht kopiert");
 }
 
 /* ================= RESET ================= */
 function resetAll(){
-document.getElementById("input").value="";
-document.getElementById("output").value="";
+input.value="";
+output.value="";
+debug.innerText="";
 }
 
 /* ================= DRAG ================= */
@@ -261,9 +214,7 @@ isDown=true;
 offsetX=dragItem.offsetLeft - e.clientX;
 offsetY=dragItem.offsetTop - e.clientY;
 });
-
-document.addEventListener("mouseup",function(){ isDown=false; });
-
+document.addEventListener("mouseup",()=>isDown=false);
 document.addEventListener("mousemove",function(e){
 if(!isDown) return;
 dragItem.style.left=(e.clientX + offsetX)+"px";
@@ -273,6 +224,5 @@ dragItem.style.right="auto";
 });
 
 </script>
-
 </body>
 </html>
