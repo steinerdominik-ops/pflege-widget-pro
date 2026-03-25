@@ -1,281 +1,74 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>JennAI – Digitale Pflegeassistenz</title>
-
-<style>
-body{margin:0;font-family:Arial;background:#eef2f7;}
-#openBtn{position:fixed;bottom:20px;right:20px;font-size:48px;cursor:pointer;}
-#widget{
-position:fixed;bottom:20px;right:20px;width:560px;height:700px;
-background:white;border-radius:12px;box-shadow:0 15px 40px rgba(0,0,0,0.3);
-display:none;flex-direction:column;
-}
-.header{background:#0f4c81;color:white;padding:12px;display:flex;justify-content:space-between;cursor:move;}
-.content{padding:12px;flex:1;overflow:auto;}
-textarea{width:100%;height:140px;margin-top:8px;padding:8px;border-radius:6px;border:1px solid #ccc;}
-button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
-.generate{background:#0f4c81;color:white;}
-.copy{background:#27ae60;color:white;}
-.reset{background:#c0392b;color:white;}
-</style>
-</head>
-
-<body>
-
-<div id="openBtn" onclick="openWidget()">👩‍⚕️</div>
-
-<div id="widget">
-<div class="header" id="dragHeader">
-<span>JennAI – Pflegebericht PRO</span>
-<span onclick="closeWidget()" style="cursor:pointer;">✖</span>
-</div>
-
-<div class="content">
-
-<textarea id="input" placeholder="Freitext eingeben..."></textarea>
-
-<button class="generate" onclick="generate()">Bericht erstellen</button>
-<button class="copy" onclick="copyText()">Bericht kopieren</button>
-<button class="reset" onclick="resetAll()">Zurücksetzen</button>
-
-<textarea id="output"></textarea>
-
-</div>
-</div>
-
 <script>
+
+/* UI */
+function openWidget(){
+widget.style.display="flex";
+openBtn.style.display="none";
+}
+function closeWidget(){
+widget.style.display="none";
+openBtn.style.display="block";
+}
+
+/* ================= GENERATE ================= */
 async function generate(){
 
 let raw = input.value.toLowerCase();
 
-/* ===== DEINE PSEUDO KI ===== */
-let result = [];
-let risks = [];
+let s1=[], s2=[], s3=[];
+let risks=new Set();
 
+/* Zustand */
 if(raw.includes("schlecht")){
-result.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
-risks.push("kritisch");
+s1.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
+risks.add("kritisch");
 }
-
 if(raw.includes("verwirrt") || raw.includes("komisch")){
-result.push("wirkte desorientiert");
+s1.push("wirkte desorientiert");
 }
 
+/* Mobilität */
 if(raw.includes("läuft") || raw.includes("unruhig")){
-result.push("motorisch unruhig");
-risks.push("Sturzrisiko");
+s1.push("motorisch unruhig");
+risks.add("Sturzrisiko");
 }
-
 if(raw.includes("weglaufen")){
-result.push("Weglauftendenz vorhanden");
-risks.push("Eigengefährdung");
+s1.push("Weglauftendenz vorhanden");
+risks.add("Eigengefährdung");
 }
 
+/* Ernährung */
 if(raw.includes("trinkt nicht")){
-result.push("Flüssigkeitsaufnahme verweigert");
-risks.push("Dehydratation");
+s2.push("Flüssigkeitsaufnahme verweigert");
+risks.add("Dehydratation");
 }
 
-/* TEXT BAUEN */
-let localText = "";
-
-if(result.length){
-localText = result.join(", ") + ".";
+/* Ausscheidung */
+if(raw.includes("stuhl") && raw.includes("verschmiert")){
+s2.push("Stuhlkontamination festgestellt");
 }
 
-if(risks.length){
-localText += " Risiken: " + [...new Set(risks)].join(", ") + ".";
-}
+/* TEXT */
+let localText="";
 
-if(!localText){
-localText = "Keine relevanten Auffälligkeiten.";
-}
+if(s1.length) localText+=s1.join(", ")+". ";
+if(s2.length) localText+=s2.join(", ")+". ";
+if(risks.size) localText+="Risiken: "+[...risks].join(", ")+".";
+if(!localText) localText="Keine relevanten Auffälligkeiten.";
 
-/* 1. SOFORT ANZEIGEN */
+/* sofort anzeigen */
 output.value = localText;
 
-/* ===== 2. KI IM HINTERGRUND ===== */
+/* ===== KI ===== */
 let ai = await hfAI(raw);
 
-/* NUR ERSETZEN WENN BESSER */
 if(ai && ai.length > localText.length){
 output.value = ai;
 }
 
 }
-}else{
-document.getElementById("output").value = "Keine KI Antwort";
-}
 
-}
-
-let raw=input.value.toLowerCase();
-let t=tokens(raw);
-
-let s1=[], s2=[], s3=[]; // Sätze
-let risks=new Set();
-
-/* ================= ZUSTAND ================= */
-if(has(raw,["schlecht","kritisch","sehr schwach"])){
-s1.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
-risks.add("Allgemeinzustand kritisch");
-}
-else if(has(raw,["reduziert","schwach"])){
-s1.push("Der Allgemeinzustand zeigte sich reduziert");
-}
-else if(has(raw,["stabil","gut"])){
-s1.push("Der Allgemeinzustand zeigte sich stabil");
-}
-
-/* ================= ORIENTIERUNG ================= */
-if(has(raw,["zeitlich verwirrt","zeitlich desorientiert"])) s1.push("zeitlich desorientiert");
-if(has(raw,["örtlich verwirrt","örtlich desorientiert"])) s1.push("örtlich desorientiert");
-if(has(raw,["verwirrt","komisch","anders"])) s1.push("wirkte desorientiert");
-
-/* ================= MOBILITÄT ================= */
-if(has(raw,["unsicher","wackelig","sturz"])) {
-s1.push("unsichere Mobilität");
-risks.add("Sturzrisiko");
-}
-if(has(raw,["bettlägerig","liegt im bett"])) {
-s1.push("überwiegend bettlägerig");
-risks.add("Dekubitusrisiko");
-}
-if(has(raw,["rollstuhl"])) s1.push("Mobilität im Rollstuhl");
-
-/* ================= ESSEN / TRINKEN ================= */
-if(has(raw,["isst nicht","verweigert essen","nimmt nichts an"])){
-s2.push("Nahrungsaufnahme nicht erfolgt");
-risks.add("Mangelernährung");
-}
-if(has(raw,["trinkt nicht","kaum getrunken","verweigert trinken"])){
-s2.push("Flüssigkeitsaufnahme verweigert");
-risks.add("Dehydratationsrisiko");
-}
-
-/* ================= AUSSCHIEDUNG ================= */
-if(has(raw,["stuhl verschmiert","eingekotet","stuhl überall"])){
-s2.push("Stuhlkontamination festgestellt");
-risks.add("Hautschädigung");
-}
-if(has(raw,["eingenässt","nass","urin"])){
-s2.push("Harninkontinenz festgestellt");
-risks.add("Hautschädigung");
-}
-
-/* ================= HAUT ================= */
-if(has(raw,["wunde","offene stelle"])) {
-s2.push("Wunde vorhanden");
-risks.add("Infektionsrisiko");
-}
-if(has(raw,["rötung","rot"])) {
-s2.push("Rötung beobachtet");
-risks.add("Dekubitusrisiko");
-}
-
-/* ================= ATMUNG ================= */
-if(has(raw,["atemnot","luft","kurzatmig"])) {
-s2.push("Atemnot beobachtet");
-risks.add("akute Verschlechterung");
-}
-if(has(raw,["husten"])) s2.push("Husten vorhanden");
-
-/* ================= SCHMERZ ================= */
-if(has(raw,["schmerz","aua","tut weh"])) s2.push("Schmerzen angegeben");
-
-/* ================= VERHALTEN ================= */
-if(has(raw,["unruhig","läuft herum","zappelig"])) s1.push("motorisch unruhig");
-if(has(raw,["weglaufen","weglauftendenz"])) {
-s1.push("Weglauftendenz vorhanden");
-risks.add("Eigengefährdung");
-}
-
-/* ================= MASSNAHMEN ================= */
-if(has(raw,["mobilisiert"])) s3.push("Mobilisation durchgeführt");
-if(has(raw,["gelagert"])) s3.push("Lagerung durchgeführt");
-if(has(raw,["medikamente"])) s3.push("Medikation laut Plan verabreicht");
-if(has(raw,["verband"])) s3.push("Verbandwechsel durchgeführt");
-
-/* ================= TEXT ================= */
-
-let text="";
-
-/* Satz 1 (Zustand + Verhalten) */
-if(s1.length){
-text+=s1.join(", ")+". ";
-}
-
-/* Satz 2 (körperliche Dinge) */
-if(s2.length){
-text+=s2.join(", ")+". ";
-}
-
-/* Satz 3 (Maßnahmen) */
-if(s3.length){
-text+=s3.join(", ")+". ";
-}
-
-/* Risiken */
-if(risks.size){
-text+="Es bestehen Risiken hinsichtlich "+[...risks].join(", ")+".";
-}
-
-if(!text){
-text="Keine relevanten Auffälligkeiten.";
-}
-
-output.value=text.charAt(0).toUpperCase()+text.slice(1);
-}
-
-/* COPY */
-function copyText(){
-navigator.clipboard.writeText(output.value);
-alert("Bericht kopiert");
-}
-
-/* RESET */
-function resetAll(){
-input.value="";
-output.value="";
-}
-
-/* DRAG */
-let offsetX, offsetY, isDown=false;
-async function hfAI(text){
-
-try{
-let res = await fetch(
-"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
-{
-method:"POST",
-headers:{
-"Authorization":"Bearer hf_DEIN_TOKEN",
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-inputs: `
-Schreibe einen professionellen Pflegebericht:
-- sachlich
-- Fachsprache
-- Risiken
-
-Text:
-${text}
-`
-})
-});
-
-let data = await res.json();
-
-if(Array.isArray(data)){
-return data[0]?.generated_text;
-}
-
-}catch(e){
-return null;
-}
+/* ================= KI ================= */
 async function hfAI(text){
 
 try{
@@ -293,7 +86,7 @@ Schreibe einen professionellen Pflegebericht:
 - sachlich
 - Fachsprache
 - mehrere Sätze
-- Risiken benennen
+- Risiken
 
 Text:
 ${text}
@@ -312,13 +105,30 @@ return null;
 }
 
 }
+
+/* COPY */
+function copyText(){
+navigator.clipboard.writeText(output.value);
+alert("Bericht kopiert");
 }
+
+/* RESET */
+function resetAll(){
+input.value="";
+output.value="";
+}
+
+/* DRAG */
+let offsetX, offsetY, isDown=false;
+
 dragHeader.addEventListener("mousedown",function(e){
 isDown=true;
 offsetX=widget.offsetLeft - e.clientX;
 offsetY=widget.offsetTop - e.clientY;
 });
+
 document.addEventListener("mouseup",()=>isDown=false);
+
 document.addEventListener("mousemove",function(e){
 if(!isDown) return;
 widget.style.left=(e.clientX + offsetX)+"px";
@@ -328,5 +138,3 @@ widget.style.right="auto";
 });
 
 </script>
-</body>
-</html>
