@@ -46,7 +46,41 @@ button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font
 </div>
 
 <script>
+async function hfAI(text){
 
+try{
+let res = await fetch(
+"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
+{
+method:"POST",
+headers:{
+"Authorization":"Bearer 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",
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+inputs: `
+Pflegebericht erstellen:
+- sachlich
+- Fachsprache
+- Risiken benennen
+
+Text:
+${text}
+`
+})
+});
+
+let data = await res.json();
+
+if(Array.isArray(data)){
+return data[0]?.generated_text;
+}
+
+}catch(e){
+return null;
+}
+
+}
 /* UI */
 function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
 function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
