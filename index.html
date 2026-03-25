@@ -5,139 +5,52 @@
 <title>JennAI</title>
 
 <style>
-body{
-margin:0;
-font-family:Inter, Arial;
-background:#eef2f7;
-}
+body{margin:0;font-family:Inter, Arial;background:#eef2f7;}
 
-/* ===== MASCOT BUTTON ===== */
 #openBtn{
-position:fixed;
-bottom:20px;
-right:20px;
-width:80px;
-height:80px;
-border-radius:50%;
-overflow:hidden;
-cursor:pointer;
+position:fixed;bottom:20px;right:20px;width:80px;height:80px;
+border-radius:50%;overflow:hidden;cursor:pointer;
 box-shadow:0 10px 25px rgba(0,0,0,0.3);
-transition:0.3s;
 }
+#openBtn img{width:100%;height:100%;object-fit:cover;}
 
-#openBtn:hover{
-transform:scale(1.05);
-}
-
-#openBtn img{
-width:100%;
-height:100%;
-object-fit:cover;
-}
-
-/* ===== CHAT POPUP ===== */
 #widget{
-position:fixed;
-bottom:20px;
-right:20px;
-width:380px;
-height:600px;
-background:white;
-border-radius:20px;
+position:fixed;bottom:20px;right:20px;width:380px;height:600px;
+background:white;border-radius:20px;
 box-shadow:0 25px 60px rgba(0,0,0,0.35);
-display:none;
-flex-direction:column;
-overflow:hidden;
+display:none;flex-direction:column;overflow:hidden;
 }
 
-/* HEADER */
 .header{
 background:linear-gradient(135deg,#0f4c81,#3a7bd5);
-color:white;
-padding:14px;
-font-weight:bold;
-display:flex;
-justify-content:space-between;
-align-items:center;
+color:white;padding:14px;font-weight:bold;
+display:flex;justify-content:space-between;
 }
 
-/* CHAT */
-.chat{
-flex:1;
-padding:12px;
-overflow-y:auto;
-display:flex;
-flex-direction:column;
-gap:10px;
-}
+.chat{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px;}
 
-/* BUBBLES */
-.msg{
-padding:10px 14px;
-border-radius:16px;
-max-width:80%;
-line-height:1.4;
-}
+.msg{padding:10px 14px;border-radius:16px;max-width:85%;}
+.user{background:#e3f2fd;align-self:flex-end;}
+.ai{background:#f1f3f6;align-self:flex-start;}
 
-.user{
-background:#e3f2fd;
-align-self:flex-end;
-}
-
-.ai{
-background:#f1f3f6;
-align-self:flex-start;
-}
-
-/* INPUT AREA */
-.inputArea{
-padding:10px;
-border-top:1px solid #eee;
-display:flex;
-flex-direction:column;
-gap:6px;
-}
-
-textarea{
-resize:none;
-border-radius:12px;
-border:1px solid #ccc;
-padding:10px;
-height:60px;
-}
-
-/* BUTTONS */
-.btnRow{
-display:flex;
-gap:6px;
-}
-
-button{
-flex:1;
-border:none;
-border-radius:12px;
-padding:8px;
-font-weight:bold;
-cursor:pointer;
-}
+.inputArea{padding:10px;border-top:1px solid #eee;}
+textarea{width:100%;height:60px;border-radius:12px;padding:10px;}
+.btnRow{display:flex;gap:6px;margin-top:6px;}
+button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 .generate{background:#0f4c81;color:white;}
 .copy{background:#27ae60;color:white;}
 .reset{background:#c0392b;color:white;}
-
 </style>
 </head>
 
 <body>
 
-<!-- MASCOT BUTTON -->
 <div id="openBtn" onclick="openWidget()">
 <img src="https://i.postimg.cc/hjzSWJd0/jennai.png">
 </div>
 
-<!-- CHAT -->
 <div id="widget">
-
 <div class="header">
 <span>JennAI</span>
 <span onclick="closeWidget()">✖</span>
@@ -146,7 +59,6 @@ cursor:pointer;
 <div class="chat" id="chat"></div>
 
 <div class="inputArea">
-
 <textarea id="input" placeholder="Pflege eingeben..."></textarea>
 
 <div class="btnRow">
@@ -156,12 +68,10 @@ cursor:pointer;
 </div>
 
 </div>
-
 </div>
 
 <script>
 
-/* DOM */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -170,16 +80,10 @@ const chat=document.getElementById("chat");
 let lastOutput="";
 
 /* UI */
-function openWidget(){
-widget.style.display="flex";
-openBtn.style.display="none";
-}
-function closeWidget(){
-widget.style.display="none";
-openBtn.style.display="block";
-}
+function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
+function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
-/* MESSAGE */
+/* CHAT */
 function addMessage(text,type){
 let div=document.createElement("div");
 div.className="msg "+type;
@@ -188,37 +92,84 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ================= PSEUDO KI ================= */
-function localAI(text){
+/* ================= PFLEGE ENGINE ================= */
+function buildReport(text){
 
 text=text.toLowerCase();
 
-let out=[];
+let zustand=[];
+let verhalten=[];
+let versorgung=[];
+let risiken=new Set();
 
-if(text.includes("az") && text.includes("schlecht"))
-out.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
+/* Zustand */
+if(text.includes("az") && text.includes("schlecht")){
+zustand.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
+risiken.add("erhöhte Vulnerabilität");
+}
+if(text.includes("müde")) zustand.push("wirkte somnolent");
 
-if(text.includes("stuhl") && text.includes("verschmiert"))
-out.push("Stuhlkontamination festgestellt");
+/* Orientierung */
+if(text.includes("verwirrt") || text.includes("komisch")){
+zustand.push("Bewohner wirkte zeitweise desorientiert");
+risiken.add("Sturzrisiko");
+}
 
-if(text.includes("irrt") || text.includes("läuft"))
-out.push("motorische Unruhe mit Umhergehen");
+/* Verhalten */
+if(text.includes("irrt") || text.includes("läuft")){
+verhalten.push("es zeigte sich eine motorische Unruhe mit Umhergehen");
+risiken.add("Sturzgefahr");
+}
+if(text.includes("schreit")){
+verhalten.push("wiederholte Lautäußerungen wurden beobachtet");
+}
 
-if(text.includes("müde"))
-out.push("wirkte somnolent");
+/* Ernährung */
+if(text.includes("essen") && (text.includes("verweigert")||text.includes("nimmt nichts"))){
+versorgung.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen");
+risiken.add("Mangelernährung");
+}
+if(text.includes("trinkt") && text.includes("nicht")){
+versorgung.push("Die Flüssigkeitsaufnahme zeigte sich unzureichend");
+risiken.add("Dehydratation");
+}
 
-if(text.includes("schreit"))
-out.push("wiederholte Lautäußerungen");
+/* Pflege */
+if(text.includes("duschen") && text.includes("verweigert")){
+versorgung.push("Die angebotene Körperpflege wurde nicht angenommen");
+}
 
-if(text.includes("duschen") && text.includes("verweigert"))
-out.push("Körperpflege nicht angenommen");
+/* Ausscheidung */
+if(text.includes("stuhl") && text.includes("verschmiert")){
+versorgung.push("Es zeigte sich eine Stuhlkontamination");
+risiken.add("Hautschädigung");
+}
 
-if(text.includes("trinkt") && text.includes("nicht"))
-out.push("Flüssigkeitsaufnahme unzureichend");
+/* TEXT AUFBAU (WICHTIG!) */
 
-if(!out.length) return "Keine relevanten Auffälligkeiten.";
+let report="";
 
-return out.join(". ") + ".";
+if(zustand.length){
+report += zustand.join(", ") + ". ";
+}
+
+if(verhalten.length){
+report += verhalten.join(", ") + ". ";
+}
+
+if(versorgung.length){
+report += versorgung.join(", ") + ". ";
+}
+
+if(risiken.size){
+report += "Es bestehen Risiken hinsichtlich " + [...risiken].join(", ") + ".";
+}
+
+if(!report){
+report="Es zeigten sich keine relevanten Auffälligkeiten.";
+}
+
+return report;
 }
 
 /* ================= KI ================= */
@@ -235,44 +186,46 @@ headers:{
 },
 body:JSON.stringify({
 inputs:`
-Du bist Pflegefachkraft.
-Schreibe einen professionellen Pflegebericht in Fachsprache:
+Erstelle einen professionellen Pflegebericht:
 
+- mehrere vollständige Sätze
+- sachlich und wertfrei
+- klare Struktur
+- Risiken benennen
+
+Text:
 ${text}
 `
 })
 });
 
 let data = await res.json();
-
 if(Array.isArray(data)){
 return data[0]?.generated_text;
 }
 
 }catch(e){return null;}
-
 }
 
 /* ================= GENERATE ================= */
 async function generate(){
 
 let text=input.value;
-
 if(!text) return;
 
-/* USER MSG */
+/* USER */
 addMessage(text,"user");
 
-/* LOCAL */
-let local=localAI(text);
-addMessage(local,"ai");
+/* LOCAL REPORT */
+let report=buildReport(text);
+addMessage(report,"ai");
 
-lastOutput=local;
+lastOutput=report;
 
-/* KI */
+/* KI VERBESSERUNG */
 let ai=await hfAI(text);
 
-if(ai && ai.length>local.length){
+if(ai && ai.length>report.length){
 chat.lastChild.innerText=ai;
 lastOutput=ai;
 }
