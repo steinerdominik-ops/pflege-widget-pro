@@ -8,7 +8,7 @@
 body{margin:0;font-family:Arial;background:#eef2f7;}
 #openBtn{position:fixed;bottom:20px;right:20px;font-size:48px;cursor:pointer;}
 #widget{
-position:fixed;bottom:20px;right:20px;width:520px;height:640px;
+position:fixed;bottom:20px;right:20px;width:560px;height:700px;
 background:white;border-radius:12px;box-shadow:0 15px 40px rgba(0,0,0,0.3);
 display:none;flex-direction:column;
 }
@@ -28,7 +28,7 @@ button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font
 
 <div id="widget">
 <div class="header" id="dragHeader">
-<span>JennAI – Digitale Pflegeassistenz</span>
+<span>JennAI – Pflegebericht PRO</span>
 <span onclick="closeWidget()" style="cursor:pointer;">✖</span>
 </div>
 
@@ -47,130 +47,147 @@ button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font
 
 <script>
 
-/* ================= UI ================= */
+/* UI */
 function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
 function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
-/* ================= NLP CORE ================= */
-function tokenize(text){
-return text.toLowerCase().split(/[\s,.;:!?]+/);
-}
+/* NLP */
+function tokens(t){return t.toLowerCase().split(/[\s,.;:!?]+/);}
+function has(t,arr){return arr.some(a=>t.includes(a));}
 
-function contains(tokens, words){
-return words.some(w => tokens.some(t => t.startsWith(w)));
-}
-
-/* ================= GENERATOR ================= */
 function generate(){
 
-let raw = input.value;
-let tokens = tokenize(raw);
+let raw=input.value.toLowerCase();
+let t=tokens(raw);
 
-let findings = [];
-let risks = new Set();
+let s1=[], s2=[], s3=[]; // Sätze
+let risks=new Set();
 
-/* ===== ZUSTAND ===== */
-if(contains(tokens,["schlecht","kritisch","mies","schwach"])){
-findings.push({text:"Der Allgemeinzustand zeigte sich deutlich reduziert",prio:1});
+/* ================= ZUSTAND ================= */
+if(has(raw,["schlecht","kritisch","sehr schwach"])){
+s1.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
 risks.add("Allgemeinzustand kritisch");
 }
-
-/* ===== TRINKEN ===== */
-if(contains(tokens,["trink","flüssig"]) && contains(tokens,["nicht","kein","verweig"])){
-findings.push({text:"die Flüssigkeitsaufnahme wurde verweigert",prio:1});
-risks.add("Dehydratationsrisiko");
+else if(has(raw,["reduziert","schwach"])){
+s1.push("Der Allgemeinzustand zeigte sich reduziert");
 }
-else if(contains(tokens,["wenig","kaum"]) && contains(tokens,["trink"])){
-findings.push({text:"die Trinkmenge war reduziert",prio:2});
-risks.add("Dehydratationsrisiko");
+else if(has(raw,["stabil","gut"])){
+s1.push("Der Allgemeinzustand zeigte sich stabil");
 }
 
-/* ===== ESSEN ===== */
-if(contains(tokens,["ess"]) && contains(tokens,["nicht","kein","verweig"])){
-findings.push({text:"die Nahrungsaufnahme erfolgte nicht",prio:1});
-risks.add("Mangelernährung");
-}
+/* ================= ORIENTIERUNG ================= */
+if(has(raw,["zeitlich verwirrt","zeitlich desorientiert"])) s1.push("zeitlich desorientiert");
+if(has(raw,["örtlich verwirrt","örtlich desorientiert"])) s1.push("örtlich desorientiert");
+if(has(raw,["verwirrt","komisch","anders"])) s1.push("wirkte desorientiert");
 
-/* ===== HARN ===== */
-if(contains(tokens,["nass","urin","eingenaesst","eingenässt"])){
-findings.push({text:"es zeigte sich eine Harninkontinenz",prio:1});
-risks.add("Hautschädigung");
-}
-
-/* ===== STUHL ===== */
-if(contains(tokens,["stuhl","kot"]) && contains(tokens,["verschmiert","überall","eingekotet"])){
-findings.push({text:"es zeigte sich eine Stuhlkontamination",prio:1});
-risks.add("Hautschädigung");
-}
-
-/* ===== MOBILITÄT ===== */
-if(contains(tokens,["unsicher","wackelig","sturz"])){
-findings.push({text:"die Mobilität zeigte sich unsicher",prio:2});
+/* ================= MOBILITÄT ================= */
+if(has(raw,["unsicher","wackelig","sturz"])) {
+s1.push("unsichere Mobilität");
 risks.add("Sturzrisiko");
 }
+if(has(raw,["bettlägerig","liegt im bett"])) {
+s1.push("überwiegend bettlägerig");
+risks.add("Dekubitusrisiko");
+}
+if(has(raw,["rollstuhl"])) s1.push("Mobilität im Rollstuhl");
 
-/* ===== VERHALTEN ===== */
-if(contains(tokens,["verwirrt","komisch","anders","durcheinander"])){
-findings.push({text:"Bewohner/in wirkte desorientiert",prio:2});
+/* ================= ESSEN / TRINKEN ================= */
+if(has(raw,["isst nicht","verweigert essen","nimmt nichts an"])){
+s2.push("Nahrungsaufnahme nicht erfolgt");
+risks.add("Mangelernährung");
+}
+if(has(raw,["trinkt nicht","kaum getrunken","verweigert trinken"])){
+s2.push("Flüssigkeitsaufnahme verweigert");
+risks.add("Dehydratationsrisiko");
 }
 
-/* ===== ATMUNG ===== */
-if(contains(tokens,["atem","luft"]) && contains(tokens,["not","schlecht"])){
-findings.push({text:"Atemnot wurde beobachtet",prio:1});
-risks.add("akute Verschlechterung");
+/* ================= AUSSCHIEDUNG ================= */
+if(has(raw,["stuhl verschmiert","eingekotet","stuhl überall"])){
+s2.push("Stuhlkontamination festgestellt");
+risks.add("Hautschädigung");
+}
+if(has(raw,["eingenässt","nass","urin"])){
+s2.push("Harninkontinenz festgestellt");
+risks.add("Hautschädigung");
 }
 
-/* ===== HAUT ===== */
-if(contains(tokens,["wunde","offen"])){
-findings.push({text:"eine Wunde war vorhanden",prio:1});
+/* ================= HAUT ================= */
+if(has(raw,["wunde","offene stelle"])) {
+s2.push("Wunde vorhanden");
 risks.add("Infektionsrisiko");
 }
+if(has(raw,["rötung","rot"])) {
+s2.push("Rötung beobachtet");
+risks.add("Dekubitusrisiko");
+}
 
-/* ===== PRIORISIERUNG ===== */
-findings.sort((a,b)=>a.prio-b.prio);
+/* ================= ATMUNG ================= */
+if(has(raw,["atemnot","luft","kurzatmig"])) {
+s2.push("Atemnot beobachtet");
+risks.add("akute Verschlechterung");
+}
+if(has(raw,["husten"])) s2.push("Husten vorhanden");
 
-/* ===== TEXT GENERIERUNG ===== */
+/* ================= SCHMERZ ================= */
+if(has(raw,["schmerz","aua","tut weh"])) s2.push("Schmerzen angegeben");
+
+/* ================= VERHALTEN ================= */
+if(has(raw,["unruhig","läuft herum","zappelig"])) s1.push("motorisch unruhig");
+if(has(raw,["weglaufen","weglauftendenz"])) {
+s1.push("Weglauftendenz vorhanden");
+risks.add("Eigengefährdung");
+}
+
+/* ================= MASSNAHMEN ================= */
+if(has(raw,["mobilisiert"])) s3.push("Mobilisation durchgeführt");
+if(has(raw,["gelagert"])) s3.push("Lagerung durchgeführt");
+if(has(raw,["medikamente"])) s3.push("Medikation laut Plan verabreicht");
+if(has(raw,["verband"])) s3.push("Verbandwechsel durchgeführt");
+
+/* ================= TEXT ================= */
+
 let text="";
 
-if(findings.length){
-
-// erster Satz
-text = findings[0].text;
-
-// weitere Sätze
-for(let i=1;i<findings.length;i++){
-text += ", " + findings[i].text;
+/* Satz 1 (Zustand + Verhalten) */
+if(s1.length){
+text+=s1.join(", ")+". ";
 }
 
-text += ".";
-
-}else{
-text="Es zeigten sich keine relevanten Auffälligkeiten.";
+/* Satz 2 (körperliche Dinge) */
+if(s2.length){
+text+=s2.join(", ")+". ";
 }
 
-/* ===== RISIKEN ===== */
+/* Satz 3 (Maßnahmen) */
+if(s3.length){
+text+=s3.join(", ")+". ";
+}
+
+/* Risiken */
 if(risks.size){
-text += " Es bestehen Risiken hinsichtlich " + [...risks].join(", ") + ".";
+text+="Es bestehen Risiken hinsichtlich "+[...risks].join(", ")+".";
 }
 
-/* ===== OUTPUT ===== */
-output.value = text.charAt(0).toUpperCase()+text.slice(1);
-
+if(!text){
+text="Keine relevanten Auffälligkeiten.";
 }
 
-/* ================= COPY ================= */
+output.value=text.charAt(0).toUpperCase()+text.slice(1);
+}
+
+/* COPY */
 function copyText(){
 navigator.clipboard.writeText(output.value);
 alert("Bericht kopiert");
 }
 
-/* ================= RESET ================= */
+/* RESET */
 function resetAll(){
 input.value="";
 output.value="";
 }
 
-/* ================= DRAG ================= */
+/* DRAG */
 let offsetX, offsetY, isDown=false;
 
 dragHeader.addEventListener("mousedown",function(e){
@@ -188,6 +205,5 @@ widget.style.right="auto";
 });
 
 </script>
-
 </body>
 </html>
