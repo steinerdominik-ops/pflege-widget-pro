@@ -48,19 +48,63 @@ button{width:100%;padding:10px;margin-top:8px;border:none;border-radius:6px;font
 <script>
 async function generate(){
 
-let text = document.getElementById("input").value;
+let raw = input.value.toLowerCase();
 
-/* einfache KI (dein System) */
-let local = "Verarbeitung...";
+/* ===== DEINE PSEUDO KI ===== */
+let result = [];
+let risks = [];
 
-/* sofort anzeigen */
-document.getElementById("output").value = local;
+if(raw.includes("schlecht")){
+result.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
+risks.push("kritisch");
+}
 
-/* echte KI */
-let ai = await hfAI(text);
+if(raw.includes("verwirrt") || raw.includes("komisch")){
+result.push("wirkte desorientiert");
+}
 
-if(ai){
-document.getElementById("output").value = ai;
+if(raw.includes("läuft") || raw.includes("unruhig")){
+result.push("motorisch unruhig");
+risks.push("Sturzrisiko");
+}
+
+if(raw.includes("weglaufen")){
+result.push("Weglauftendenz vorhanden");
+risks.push("Eigengefährdung");
+}
+
+if(raw.includes("trinkt nicht")){
+result.push("Flüssigkeitsaufnahme verweigert");
+risks.push("Dehydratation");
+}
+
+/* TEXT BAUEN */
+let localText = "";
+
+if(result.length){
+localText = result.join(", ") + ".";
+}
+
+if(risks.length){
+localText += " Risiken: " + [...new Set(risks)].join(", ") + ".";
+}
+
+if(!localText){
+localText = "Keine relevanten Auffälligkeiten.";
+}
+
+/* 1. SOFORT ANZEIGEN */
+output.value = localText;
+
+/* ===== 2. KI IM HINTERGRUND ===== */
+let ai = await hfAI(raw);
+
+/* NUR ERSETZEN WENN BESSER */
+if(ai && ai.length > localText.length){
+output.value = ai;
+}
+
+}
 }else{
 document.getElementById("output").value = "Keine KI Antwort";
 }
@@ -232,7 +276,42 @@ return data[0]?.generated_text;
 }catch(e){
 return null;
 }
+async function hfAI(text){
 
+try{
+let res = await fetch(
+"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
+{
+method:"POST",
+headers:{
+"Authorization":"Bearer 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",
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+inputs: `
+Schreibe einen professionellen Pflegebericht:
+- sachlich
+- Fachsprache
+- mehrere Sätze
+- Risiken benennen
+
+Text:
+${text}
+`
+})
+});
+
+let data = await res.json();
+
+if(Array.isArray(data)){
+return data[0]?.generated_text;
+}
+
+}catch(e){
+return null;
+}
+
+}
 }
 dragHeader.addEventListener("mousedown",function(e){
 isDown=true;
