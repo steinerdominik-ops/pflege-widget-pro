@@ -1,10 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>JennAI – Digitale Pflegeassistenz</title>
+
+<style>
+body{margin:0;font-family:Arial;background:#eef2f7;}
+
+#openBtn{
+position:fixed;bottom:20px;right:20px;font-size:48px;cursor:pointer;
+}
+
+#widget{
+position:fixed;bottom:20px;right:20px;width:560px;height:700px;
+background:white;border-radius:12px;
+box-shadow:0 15px 40px rgba(0,0,0,0.3);
+display:none;flex-direction:column;
+}
+
+.header{
+background:#0f4c81;color:white;padding:12px;
+display:flex;justify-content:space-between;cursor:move;
+}
+
+.content{
+padding:12px;flex:1;overflow:auto;
+}
+
+textarea{
+width:100%;height:140px;margin-top:8px;
+padding:8px;border-radius:6px;border:1px solid #ccc;
+}
+
+button{
+width:100%;padding:10px;margin-top:8px;
+border:none;border-radius:6px;font-weight:bold;cursor:pointer;
+}
+
+.generate{background:#0f4c81;color:white;}
+.copy{background:#27ae60;color:white;}
+.reset{background:#c0392b;color:white;}
+
+</style>
+</head>
+
+<body>
+
+<div id="openBtn" onclick="openWidget()">👩‍⚕️</div>
+
+<div id="widget">
+<div class="header" id="dragHeader">
+<span>JennAI – Pflegebericht PRO</span>
+<span onclick="closeWidget()" style="cursor:pointer;">✖</span>
+</div>
+
+<div class="content">
+
+<textarea id="input" placeholder="Freitext eingeben..."></textarea>
+
+<button class="generate" onclick="generate()">Bericht erstellen</button>
+<button class="copy" onclick="copyText()">Bericht kopieren</button>
+<button class="reset" onclick="resetAll()">Zurücksetzen</button>
+
+<textarea id="output"></textarea>
+
+</div>
+</div>
+
 <script>
+
+/* DOM FIX */
+const widget = document.getElementById("widget");
+const openBtn = document.getElementById("openBtn");
+const input = document.getElementById("input");
+const output = document.getElementById("output");
+const dragHeader = document.getElementById("dragHeader");
 
 /* UI */
 function openWidget(){
 widget.style.display="flex";
 openBtn.style.display="none";
 }
+
 function closeWidget(){
 widget.style.display="none";
 openBtn.style.display="block";
@@ -15,54 +92,39 @@ async function generate(){
 
 let raw = input.value.toLowerCase();
 
-let s1=[], s2=[], s3=[];
-let risks=new Set();
+/* ===== PSEUDO KI ===== */
+let text = "";
 
-/* Zustand */
 if(raw.includes("schlecht")){
-s1.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
-risks.add("kritisch");
+text += "Der Allgemeinzustand zeigte sich deutlich reduziert. ";
 }
 if(raw.includes("verwirrt") || raw.includes("komisch")){
-s1.push("wirkte desorientiert");
+text += "Bewohner wirkte desorientiert. ";
 }
-
-/* Mobilität */
 if(raw.includes("läuft") || raw.includes("unruhig")){
-s1.push("motorisch unruhig");
-risks.add("Sturzrisiko");
+text += "Es zeigte sich motorische Unruhe. ";
 }
 if(raw.includes("weglaufen")){
-s1.push("Weglauftendenz vorhanden");
-risks.add("Eigengefährdung");
+text += "Weglauftendenz vorhanden. ";
 }
-
-/* Ernährung */
 if(raw.includes("trinkt nicht")){
-s2.push("Flüssigkeitsaufnahme verweigert");
-risks.add("Dehydratation");
+text += "Flüssigkeitsaufnahme verweigert. ";
 }
-
-/* Ausscheidung */
 if(raw.includes("stuhl") && raw.includes("verschmiert")){
-s2.push("Stuhlkontamination festgestellt");
+text += "Stuhlkontamination festgestellt. ";
 }
 
-/* TEXT */
-let localText="";
-
-if(s1.length) localText+=s1.join(", ")+". ";
-if(s2.length) localText+=s2.join(", ")+". ";
-if(risks.size) localText+="Risiken: "+[...risks].join(", ")+".";
-if(!localText) localText="Keine relevanten Auffälligkeiten.";
+if(!text){
+text = "Keine relevanten Auffälligkeiten.";
+}
 
 /* sofort anzeigen */
-output.value = localText;
+output.value = text;
 
-/* ===== KI ===== */
+/* ===== KI IM HINTERGRUND ===== */
 let ai = await hfAI(raw);
 
-if(ai && ai.length > localText.length){
+if(ai && ai.length > text.length){
 output.value = ai;
 }
 
@@ -86,7 +148,7 @@ Schreibe einen professionellen Pflegebericht:
 - sachlich
 - Fachsprache
 - mehrere Sätze
-- Risiken
+- Risiken benennen
 
 Text:
 ${text}
@@ -138,3 +200,6 @@ widget.style.right="auto";
 });
 
 </script>
+
+</body>
+</html>
