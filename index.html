@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pflegebericht FINAL</title>
+<title>Pflegebericht Professional</title>
 
 <style>
 body { margin:0; font-family:Arial; background:#f4f6fa; }
 
-/* ================= BUTTON ================= */
+/* ===== Floating Button ===== */
 
 #openBtn{
 position:fixed;
@@ -15,12 +15,12 @@ bottom:20px;
 right:20px;
 width:55px;
 height:55px;
-background:#0050ff;
+background:#004cff;
 color:white;
 border:none;
 border-radius:50%;
 cursor:pointer;
-box-shadow:0 5px 20px rgba(0,0,0,0.25);
+box-shadow:0 6px 20px rgba(0,0,0,0.25);
 font-weight:bold;
 display:flex;
 align-items:center;
@@ -28,29 +28,30 @@ justify-content:center;
 z-index:1000;
 }
 
-/* ================= WIDGET ================= */
+/* ===== Widget ===== */
 
 #widget{
 position:fixed;
 bottom:20px;
 right:20px;
-width:420px;
-height:600px;
+width:450px;
+height:650px;
 background:white;
 border-radius:18px;
-box-shadow:0 10px 40px rgba(0,0,0,0.25);
+box-shadow:0 15px 50px rgba(0,0,0,0.3);
 display:none;
 flex-direction:column;
 z-index:1001;
 }
 
 .header{
-background:#0050ff;
+background:#004cff;
 color:white;
-padding:14px;
+padding:15px;
 cursor:move;
 border-radius:18px 18px 0 0;
 font-weight:bold;
+font-size:16px;
 }
 
 .content{
@@ -65,34 +66,40 @@ margin:5px 0;
 border:1px solid #ddd;
 border-radius:8px;
 cursor:pointer;
+transition:0.2s;
+}
+
+.option:hover{
+background:#eef3ff;
 }
 
 .option.selected{
-background:#0050ff;
+background:#004cff;
 color:white;
 }
 
 textarea{
 width:100%;
-height:80px;
+height:90px;
 margin-top:8px;
 border-radius:8px;
 border:1px solid #ccc;
-padding:6px;
+padding:8px;
 resize:none;
+font-size:14px;
 }
 
 button{
-padding:8px;
+padding:9px;
 border:none;
 border-radius:8px;
-margin-top:6px;
+margin-top:8px;
 width:100%;
 cursor:pointer;
 font-weight:bold;
 }
 
-.generate{ background:#0050ff; color:white; }
+.generate{ background:#004cff; color:white; }
 .copy{ background:#2ecc71; color:white; }
 .reset{ background:#e74c3c; color:white; }
 .mode{ background:#555; color:white; }
@@ -110,49 +117,52 @@ font-weight:bold;
 
 <div class="content">
 
-<button class="mode" onclick="toggleMode()">Modus wechseln</button>
+<button class="mode" onclick="toggleMode()">Modus wechseln (Standard / Schnell)</button>
 
-<h4>Kategorien</h4>
+<h4>Kategorie</h4>
 
 <div class="option" onclick="selectCategory(this)">Allgemeiner Pflegebericht</div>
 <div class="option" onclick="selectCategory(this)">Essen & Trinken</div>
 <div class="option" onclick="selectCategory(this)">Medikamente</div>
+<div class="option" onclick="selectCategory(this)">Mobilisation</div>
 <div class="option" onclick="selectCategory(this)">Sturzereignis</div>
 
-<h4>Stichwörter</h4>
-<textarea id="keywords" placeholder="z.B. mit Unterstützung, vital stabil, mobilisiert"></textarea>
+<h4>Stichwörter (mit Komma trennen)</h4>
+<textarea id="keywords" placeholder="z.B. mit Unterstützung, vital stabil, mobilisiert, Trinkmenge ausreichend"></textarea>
 
 <button class="generate" onclick="generate()">Bericht generieren</button>
 <button class="copy" onclick="copyText()">Bericht kopieren</button>
 <button class="reset" onclick="resetAll()">Zurücksetzen</button>
 
-<textarea id="output" placeholder="Hier erscheint der Pflegebericht..."></textarea>
+<textarea id="output" placeholder="Hier erscheint der professionelle Pflegebericht..."></textarea>
 
 </div>
 </div>
 
 <script>
 
-/* ================= MODUS ================= */
+/* ================= BASIC SETUP ================= */
 
 let mode="standard";
 let selectedCategory="";
 let widget=document.getElementById("widget");
 let openBtn=document.getElementById("openBtn");
 
+/* ================= OPEN / CLOSE ================= */
+
 openBtn.onclick=function(){
 widget.style.display="flex";
 openBtn.style.display="none";
 };
 
-/* ================= MODUS WECHSEL ================= */
+/* ================= MODE SWITCH ================= */
 
 function toggleMode(){
 mode = mode==="standard" ? "schnell" : "standard";
 alert("Aktueller Modus: "+mode);
 }
 
-/* ================= KATEGORIE ================= */
+/* ================= CATEGORY ================= */
 
 function selectCategory(el){
 document.querySelectorAll(".option").forEach(o=>o.classList.remove("selected"));
@@ -168,46 +178,104 @@ return arr[Math.floor(Math.random()*arr.length)];
 
 function generate(){
 
-let keywords=document.getElementById("keywords").value
+let words=document.getElementById("keywords").value
 .split(",")
-.map(k=>k.trim())
-.filter(k=>k!="");
+.map(w=>w.trim().toLowerCase())
+.filter(w=>w!="");
 
-let intro=[
-"Bewohner/in wurde im Rahmen der Pflege versorgt.",
-"Pflegehandlung wurde sachgerecht durchgeführt.",
-"Versorgung erfolgte planmäßig."
-];
-
-let neutralEnd=[
-"Allgemeinzustand stabil.",
-"Keine Auffälligkeiten dokumentiert.",
-"Verlauf unauffällig."
-];
-
-let text="";
-
-if(mode==="schnell"){
-
-text="Bewohner/in: "+keywords.join(", ")+". "+random(neutralEnd);
-
-}else{
-
-if(selectedCategory===""){
-text="Bitte Kategorie auswählen.";
-}else{
-
-text=random(intro)+" Kategorie: "+selectedCategory+". ";
-
-if(keywords.length>0){
-text+="Beobachtet: "+keywords.join(", ")+". ";
+if(mode==="standard" && selectedCategory===""){
+document.getElementById("output").value="Bitte Kategorie auswählen.";
+return;
 }
 
-text+=random(neutralEnd);
-}
+/* Intro */
+
+let intro = "Bewohner/in wurde im Rahmen der geplanten pflegerischen Maßnahmen versorgt.";
+
+/* Textbausteine */
+
+let support="", mobility="", nutrition="", condition="", medication="", event="", other="";
+
+/* Keyword-Logik */
+
+words.forEach(word => {
+
+switch(word){
+
+case "mit unterstützung":
+support="Die Durchführung erfolgte mit Unterstützung.";
+break;
+
+case "selbstständig":
+support="Die Maßnahmen wurden selbstständig umgesetzt.";
+break;
+
+case "mobilisiert":
+mobility="Mobilisation erfolgte entsprechend vorhandener Ressourcen.";
+break;
+
+case "transfer":
+mobility="Transfer wurde unter Einhaltung der Sicherheitsmaßnahmen durchgeführt.";
+break;
+
+case "trinkmenge ausreichend":
+nutrition="Die Trinkmenge wurde als ausreichend dokumentiert.";
+break;
+
+case "appetitgerecht gegessen":
+nutrition="Nahrungsaufnahme erfolgte appetitgerecht.";
+break;
+
+case "vital stabil":
+condition="Der Allgemeinzustand zeigte sich vital stabil.";
+break;
+
+case "wach und orientiert":
+condition="Bewohner/in war wach und orientiert.";
+break;
+
+case "unruhig":
+condition="Bewohner/in zeigte sich zeitweise unruhig.";
+break;
+
+case "medikamente":
+medication="Medikamentengabe erfolgte gemäß ärztlicher Verordnung.";
+break;
+
+case "sturz":
+event="Ein Sturzereignis wurde dokumentiert. Beobachtung eingeleitet.";
+break;
+
+default:
+other += word.charAt(0).toUpperCase() + word.slice(1) + ". ";
 }
 
-document.getElementById("output").value=text;
+});
+
+/* Textaufbau */
+
+let finalText="";
+
+if(mode==="standard"){
+finalText += intro + "\n\n";
+}
+
+if(selectedCategory && mode==="standard"){
+finalText += "Kategorie: " + selectedCategory + ".\n\n";
+}
+
+if(support) finalText += support + "\n";
+if(mobility) finalText += mobility + "\n";
+if(nutrition) finalText += nutrition + "\n";
+if(condition) finalText += condition + "\n";
+if(medication) finalText += medication + "\n";
+if(event) finalText += event + "\n";
+if(other) finalText += other + "\n";
+
+finalText += "\nEs zeigten sich keine weiteren dokumentationsrelevanten Auffälligkeiten.";
+
+document.getElementById("output").value=finalText;
+
 }
 
 /* ================= COPY ================= */
