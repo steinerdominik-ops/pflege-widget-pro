@@ -181,7 +181,7 @@ let res = await fetch(
 {
 method:"POST",
 headers:{
-"Authorization":"Bearer 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",
+"Authorization":"Bearer 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",
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
@@ -245,7 +245,46 @@ chat.innerHTML="";
 input.value="";
 lastOutput="";
 }
+async function hfAI(text){
 
+try{
+let res = await fetch(
+"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
+{
+method:"POST",
+headers:{
+"Authorization":"Bearer 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",
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+inputs:`
+Du bist eine professionelle Pflegefachkraft.
+
+Erstelle IMMER einen vollständigen Pflegebericht:
+
+- mehrere Sätze
+- Fachsprache
+- sachlich
+- Risiken benennen
+- auch bei unklaren Stichwörtern interpretieren
+
+Text:
+${text}
+`
+})
+});
+
+let data = await res.json();
+
+if(Array.isArray(data)){
+return data[0]?.generated_text;
+}
+
+}catch(e){
+return null;
+}
+
+}
 </script>
 
 </body>
