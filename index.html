@@ -81,27 +81,34 @@ function normalize(t){
 
 t=t.toLowerCase();
 
-/* Zustand */
-t=t.replace(/az schlecht|mies|sehr schlecht/g,"az reduziert");
-t=t.replace(/müde|schwach|kraftlos/g,"erschöpft");
+/* ===== ZUSTAND ===== */
+t=t.replace(/az schlecht|sehr schlecht|mies/g,"az reduziert");
+t=t.replace(/müde|schwach|kraftlos|erschöpft/g,"erschöpft");
 
-/* Verhalten */
-t=t.replace(/irrt herum|läuft herum|wandert/g,"unruhig");
+/* ===== ORIENTIERUNG ===== */
+t=t.replace(/zeitlich desorientiert|zeitlich verwirrt/g,"desorientiert zeit");
+t=t.replace(/örtlich desorientiert|örtlich verwirrt/g,"desorientiert ort");
+t=t.replace(/verwirrt|komisch drauf|anders/g,"desorientiert");
+
+/* ===== VERHALTEN ===== */
+t=t.replace(/irrt herum|läuft herum|wandert|läuft ständig/g,"unruhig");
 t=t.replace(/weglauftendenz|läuft weg/g,"weglaufen");
-t=t.replace(/schreit|brüllt/g,"laut");
+t=t.replace(/schreit|brüllt|ruft laut/g,"laut");
 
-/* Essen/Trinken */
-t=t.replace(/isst nix|isst nicht|nimmt nichts/g,"essen verweigert");
-t=t.replace(/trinkt nicht|trinkt kaum/g,"trinken unzureichend");
+/* ===== ESSEN ===== */
+t=t.replace(/isst nix|isst nicht|nimmt nichts an|verweigert essen/g,"essen verweigert");
 
-/* Emotion */
-t=t.replace(/weinerlich|traurig/g,"emotional");
+/* ===== TRINKEN ===== */
+t=t.replace(/trinkt nicht|trinkt kaum|trinkt wenig/g,"trinken unzureichend");
 
-/* Ausscheidung */
-t=t.replace(/urin überall|eingenässt/g,"harninkontinenz");
+/* ===== EMOTION ===== */
+t=t.replace(/weinerlich|traurig|emotional/g,"emotional");
+
+/* ===== AUSSCHIEDUNG ===== */
+t=t.replace(/urin überall|eingenässt|nass/g,"harninkontinenz");
 t=t.replace(/stuhl verschmiert|eingekotet/g,"stuhl");
 
-/* SCHMERZ KOMPLETT */
+/* ===== SCHMERZ ===== */
 t=t.replace(/beinschmerzen|schmerzen im bein/g,"schmerz bein");
 t=t.replace(/armschmerzen/g,"schmerz arm");
 t=t.replace(/rückenschmerzen/g,"schmerz rücken");
@@ -116,6 +123,7 @@ t=t.replace(/brustschmerzen/g,"schmerz brust");
 
 return t;
 }
+}
 
 /* ===== REPORT ENGINE ===== */
 function buildReport(t){
@@ -127,6 +135,20 @@ let risks=new Set();
 if(t.includes("az reduziert")){
 r.push("Der Allgemeinzustand zeigte sich reduziert");
 risks.add("allgemeine Schwäche");
+}
+if(t.includes("erschöpft")){
+r.push("Bewohner wirkte körperlich erschöpft");
+}
+
+/* Orientierung */
+if(t.includes("desorientiert zeit")){
+r.push("Bewohner zeigte sich zeitlich desorientiert");
+}
+if(t.includes("desorientiert ort")){
+r.push("Bewohner zeigte sich örtlich desorientiert");
+}
+if(t.includes("desorientiert")){
+r.push("Bewohner zeigte sich desorientiert");
 }
 
 /* Schmerz */
@@ -199,6 +221,7 @@ out="Es zeigten sich keine relevanten Auffälligkeiten.";
 }
 
 return out;
+}
 }
 
 /* ===== KI (OPTIONAL) ===== */
