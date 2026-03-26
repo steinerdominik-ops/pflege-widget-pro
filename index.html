@@ -12,6 +12,7 @@ position:fixed;bottom:20px;right:20px;width:80px;height:80px;
 border-radius:50%;overflow:hidden;cursor:pointer;
 box-shadow:0 10px 25px rgba(0,0,0,0.3);
 }
+
 #openBtn img{width:100%;height:100%;object-fit:cover;}
 
 #widget{
@@ -35,6 +36,7 @@ display:flex;justify-content:space-between;
 
 .inputArea{padding:10px;border-top:1px solid #eee;}
 textarea{width:100%;height:60px;border-radius:12px;padding:10px;}
+
 .btnRow{display:flex;gap:6px;margin-top:6px;}
 button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
@@ -72,6 +74,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <script>
 
+/* DOM */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -92,84 +95,86 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ================= PFLEGE ENGINE ================= */
+/* ================= NORMALIZE ================= */
+function normalize(text){
+
+text = text.toLowerCase();
+
+text = text.replace(/az schlecht|mies/g,"allgemeinzustand reduziert");
+text = text.replace(/irrt herum|läuft herum/g,"unruhig");
+text = text.replace(/schreit|brüllt/g,"laut");
+text = text.replace(/isst nix|isst nicht/g,"essen verweigert");
+text = text.replace(/trinkt nicht/g,"trinken unzureichend");
+text = text.replace(/beinschmerzen/g,"schmerz bein");
+text = text.replace(/weinerlich/g,"emotional belastet");
+text = text.replace(/urin überall|eingenässt/g,"harninkontinenz");
+text = text.replace(/stuhl verschmiert/g,"stuhl kontaminiert");
+
+return text;
+}
+
+/* ================= BUILD REPORT ================= */
 function buildReport(text){
 
-text=text.toLowerCase();
-
-let zustand=[];
-let verhalten=[];
-let versorgung=[];
-let risiken=new Set();
+let r=[];
+let risks=new Set();
 
 /* Zustand */
-if(text.includes("az") && text.includes("schlecht")){
-zustand.push("Der Allgemeinzustand zeigte sich deutlich reduziert");
-risiken.add("erhöhte Vulnerabilität");
+if(text.includes("allgemeinzustand reduziert")){
+r.push("Der Allgemeinzustand zeigte sich reduziert");
+risks.add("allgemeine Schwäche");
 }
-if(text.includes("müde")) zustand.push("wirkte somnolent");
 
-/* Orientierung */
-if(text.includes("verwirrt") || text.includes("komisch")){
-zustand.push("Bewohner wirkte zeitweise desorientiert");
-risiken.add("Sturzrisiko");
+/* Schmerz */
+if(text.includes("schmerz")){
+r.push("Bewohner äußerte Schmerzen");
+risks.add("Schmerzbelastung");
 }
 
 /* Verhalten */
-if(text.includes("irrt") || text.includes("läuft")){
-verhalten.push("es zeigte sich eine motorische Unruhe mit Umhergehen");
-risiken.add("Sturzgefahr");
+if(text.includes("unruhig")){
+r.push("Es zeigte sich motorische Unruhe mit Umhergehen");
+risks.add("Sturzrisiko");
 }
-if(text.includes("schreit")){
-verhalten.push("wiederholte Lautäußerungen wurden beobachtet");
+if(text.includes("laut")){
+r.push("Wiederholte Lautäußerungen wurden beobachtet");
 }
 
 /* Ernährung */
-if(text.includes("essen") && (text.includes("verweigert")||text.includes("nimmt nichts"))){
-versorgung.push("Die angebotene Nahrungsaufnahme wurde nicht angenommen");
-risiken.add("Mangelernährung");
+if(text.includes("essen verweigert")){
+r.push("Die Nahrungsaufnahme wurde nicht angenommen");
+risks.add("Mangelernährung");
 }
-if(text.includes("trinkt") && text.includes("nicht")){
-versorgung.push("Die Flüssigkeitsaufnahme zeigte sich unzureichend");
-risiken.add("Dehydratation");
-}
-
-/* Pflege */
-if(text.includes("duschen") && text.includes("verweigert")){
-versorgung.push("Die angebotene Körperpflege wurde nicht angenommen");
+if(text.includes("trinken unzureichend")){
+r.push("Die Trinkmenge war unzureichend");
+risks.add("Dehydratation");
 }
 
 /* Ausscheidung */
-if(text.includes("stuhl") && text.includes("verschmiert")){
-versorgung.push("Es zeigte sich eine Stuhlkontamination");
-risiken.add("Hautschädigung");
+if(text.includes("harninkontinenz")){
+r.push("Harninkontinenz wurde festgestellt");
+}
+if(text.includes("stuhl kontaminiert")){
+r.push("Stuhlkontamination wurde festgestellt");
 }
 
-/* TEXT AUFBAU (WICHTIG!) */
-
-let report="";
-
-if(zustand.length){
-report += zustand.join(", ") + ". ";
+/* Emotion */
+if(text.includes("emotional belastet")){
+r.push("Bewohner zeigte sich emotional belastet");
 }
 
-if(verhalten.length){
-report += verhalten.join(", ") + ". ";
+/* FINAL */
+let textOut=r.join(". ") + ".";
+
+if(risks.size){
+textOut += " Es bestehen Risiken hinsichtlich " + [...risks].join(", ") + ".";
 }
 
-if(versorgung.length){
-report += versorgung.join(", ") + ". ";
+if(textOut==="." || textOut.trim()===""){
+textOut="Es zeigten sich keine relevanten Auffälligkeiten.";
 }
 
-if(risiken.size){
-report += "Es bestehen Risiken hinsichtlich " + [...risiken].join(", ") + ".";
-}
-
-if(!report){
-report="Es zeigten sich keine relevanten Auffälligkeiten.";
-}
-
-return report;
+return textOut;
 }
 
 /* ================= KI ================= */
@@ -188,9 +193,9 @@ body:JSON.stringify({
 inputs:`
 Erstelle einen professionellen Pflegebericht:
 
-- mehrere vollständige Sätze
+- mehrere Sätze
 - sachlich und wertfrei
-- klare Struktur
+- Fachsprache
 - Risiken benennen
 
 Text:
@@ -200,11 +205,13 @@ ${text}
 });
 
 let data = await res.json();
+
 if(Array.isArray(data)){
 return data[0]?.generated_text;
 }
 
 }catch(e){return null;}
+
 }
 
 /* ================= GENERATE ================= */
@@ -217,17 +224,17 @@ if(!raw) return;
 /* USER */
 addMessage(raw,"user");
 
-/* NORMALISIEREN */
-let normalized = normalize(raw);
+/* NORMALIZE */
+let norm = normalize(raw);
 
-/* LOCAL REPORT */
-let report = buildReport(normalized);
+/* LOCAL */
+let report = buildReport(norm);
 addMessage(report,"ai");
 
 lastOutput = report;
 
 /* KI */
-let ai = await hfAI(normalized);
+let ai = await hfAI(norm);
 
 if(ai && ai.length > report.length){
 chat.lastChild.innerText = ai;
@@ -235,7 +242,6 @@ lastOutput = ai;
 }
 
 input.value="";
-}
 }
 
 /* COPY */
@@ -250,80 +256,7 @@ chat.innerHTML="";
 input.value="";
 lastOutput="";
 }
-async function hfAI(text){
 
-try{
-let res = await fetch(
-"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
-{
-method:"POST",
-headers:{
-"Authorization":"Bearer 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",
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-inputs:`
-Du bist eine professionelle Pflegefachkraft.
-
-Erstelle IMMER einen vollständigen Pflegebericht:
-
-- mehrere Sätze
-- Fachsprache
-- sachlich
-- Risiken benennen
-- auch bei unklaren Stichwörtern interpretieren
-
-Text:
-${text}
-`
-})
-});
-
-let data = await res.json();
-
-if(Array.isArray(data)){
-return data[0]?.generated_text;
-}
-
-}catch(e){
-return null;
-}
-function normalize(text){
-
-text = text.toLowerCase();
-
-/* Zustand */
-text = text.replace(/az schlecht|sehr schlecht|mies/g,"allgemeinzustand reduziert");
-text = text.replace(/schwach|kraftlos/g,"erschöpft");
-
-/* Verhalten */
-text = text.replace(/irrt herum|läuft herum|wandert/g,"unruhig");
-text = text.replace(/weglauftendenz|läuft weg/g,"weglaufen");
-text = text.replace(/schreit|brüllt/g,"laut");
-
-/* Essen */
-text = text.replace(/isst nicht|isst nix|nimmt nichts an/g,"essen verweigert");
-
-/* Trinken */
-text = text.replace(/trinkt nicht|trinkt kaum/g,"trinken unzureichend");
-
-/* Schmerz */
-text = text.replace(/beinschmerzen|schmerzen im bein/g,"schmerz bein");
-text = text.replace(/tut weh/g,"schmerz");
-
-/* Pflege */
-text = text.replace(/duschen|gewaschen/g,"körperpflege");
-
-/* Ausscheidung */
-text = text.replace(/urin überall|eingenässt/g,"harninkontinenz");
-text = text.replace(/stuhl verschmiert|eingekotet/g,"stuhl kontaminiert");
-
-/* Emotion */
-text = text.replace(/weinerlich/g,"emotional belastet");
-
-return text;
-}
-}
 </script>
 
 </body>
