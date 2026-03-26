@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>JennAI</title>
+<title>Jenn AI</title>
 
 <style>
 body{margin:0;font-family:Inter,Arial;background:#eef2f7;}
@@ -52,7 +52,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <div id="widget">
 <div class="header">
-<span>JennAI ULTIMATE MAX</span>
+<span>Jenn AI</span>
 <span onclick="closeWidget()">✖</span>
 </div>
 
@@ -90,27 +90,29 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ===== NORMALIZE (SMART ENGINE) ===== */
+/* ===== ULTRA NORMALIZE ===== */
 function normalize(t){
 
 t=t.toLowerCase();
 
 /* Zustand */
-t=t.replace(/az schlecht|mies|sehr schlecht/g,"az reduziert");
-t=t.replace(/müde|schwach|kraftlos/g,"erschöpft");
+t=t.replace(/az.*schlecht|mies|kritisch/g,"az reduziert");
+t=t.replace(/müde|schwach|kraftlos|erschöpft/g,"erschöpft");
 
 /* Orientierung */
-t=t.replace(/zeitlich.*desorientiert/g,"desorientiert zeit");
-t=t.replace(/örtlich.*desorientiert/g,"desorientiert ort");
-t=t.replace(/verwirrt|komisch/g,"desorientiert");
+t=t.replace(/zeitlich.*verwirrt/g,"desorientiert zeit");
+t=t.replace(/örtlich.*verwirrt/g,"desorientiert ort");
+t=t.replace(/verwirrt|komisch|anders/g,"desorientiert");
 
 /* Verhalten */
 t=t.replace(/irrt herum|läuft herum|wandert/g,"unruhig");
 t=t.replace(/weglauftendenz|läuft weg/g,"weglaufen");
-t=t.replace(/schreit|brüllt/g,"laut");
+t=t.replace(/schreit|brüllt|ruft/g,"laut");
 
-/* Essen/Trinken */
+/* Essen */
 t=t.replace(/isst.*nicht|nimmt nichts/g,"essen verweigert");
+
+/* Trinken */
 t=t.replace(/trinkt.*nicht/g,"trinken unzureichend");
 
 /* Emotion */
@@ -120,9 +122,8 @@ t=t.replace(/weinerlich|traurig/g,"emotional");
 t=t.replace(/urin.*überall|eingenässt/g,"harninkontinenz");
 t=t.replace(/stuhl.*verschmiert/g,"stuhl");
 
-/* Schmerzen (alle wichtigen Bereiche) */
+/* Schmerz (alle wichtigen Bereiche) */
 const painAreas=["bein","arm","rücken","kopf","bauch","schulter","knie","fuß","hüfte","nacken","brust"];
-
 painAreas.forEach(p=>{
 let regex=new RegExp(p+"schmerzen|schmerzen im "+p,"g");
 t=t.replace(regex,"schmerz "+p);
@@ -217,14 +218,14 @@ out="Es zeigten sich keine relevanten Auffälligkeiten.";
 return out;
 }
 
-/* ===== KI ===== */
+/* ===== KI (OPTIONAL) ===== */
 async function hfAI(text){
 
 try{
 let res=await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",{
 method:"POST",
 headers:{
-"Authorization":"Bearer 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",
+"Authorization":"Bearer hf_DEIN_TOKEN",
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
@@ -253,7 +254,7 @@ addMessage(report,"ai");
 
 lastOutput=report;
 
-/* KI */
+/* KI Upgrade */
 let ai=await hfAI(norm);
 if(ai && ai.length>report.length){
 chat.lastChild.innerText=ai;
