@@ -181,7 +181,7 @@ let res = await fetch(
 {
 method:"POST",
 headers:{
-"Authorization":"Bearer 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",
+"Authorization":"Bearer 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",
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
@@ -210,27 +210,32 @@ return data[0]?.generated_text;
 /* ================= GENERATE ================= */
 async function generate(){
 
-let text=input.value;
-if(!text) return;
+let raw = input.value;
+
+if(!raw) return;
 
 /* USER */
-addMessage(text,"user");
+addMessage(raw,"user");
+
+/* NORMALISIEREN */
+let normalized = normalize(raw);
 
 /* LOCAL REPORT */
-let report=buildReport(text);
+let report = buildReport(normalized);
 addMessage(report,"ai");
 
-lastOutput=report;
+lastOutput = report;
 
-/* KI VERBESSERUNG */
-let ai=await hfAI(text);
+/* KI */
+let ai = await hfAI(normalized);
 
-if(ai && ai.length>report.length){
-chat.lastChild.innerText=ai;
-lastOutput=ai;
+if(ai && ai.length > report.length){
+chat.lastChild.innerText = ai;
+lastOutput = ai;
 }
 
 input.value="";
+}
 }
 
 /* COPY */
@@ -253,7 +258,7 @@ let res = await fetch(
 {
 method:"POST",
 headers:{
-"Authorization":"Bearer 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",
+"Authorization":"Bearer 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",
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
@@ -283,7 +288,41 @@ return data[0]?.generated_text;
 }catch(e){
 return null;
 }
+function normalize(text){
 
+text = text.toLowerCase();
+
+/* Zustand */
+text = text.replace(/az schlecht|sehr schlecht|mies/g,"allgemeinzustand reduziert");
+text = text.replace(/schwach|kraftlos/g,"erschöpft");
+
+/* Verhalten */
+text = text.replace(/irrt herum|läuft herum|wandert/g,"unruhig");
+text = text.replace(/weglauftendenz|läuft weg/g,"weglaufen");
+text = text.replace(/schreit|brüllt/g,"laut");
+
+/* Essen */
+text = text.replace(/isst nicht|isst nix|nimmt nichts an/g,"essen verweigert");
+
+/* Trinken */
+text = text.replace(/trinkt nicht|trinkt kaum/g,"trinken unzureichend");
+
+/* Schmerz */
+text = text.replace(/beinschmerzen|schmerzen im bein/g,"schmerz bein");
+text = text.replace(/tut weh/g,"schmerz");
+
+/* Pflege */
+text = text.replace(/duschen|gewaschen/g,"körperpflege");
+
+/* Ausscheidung */
+text = text.replace(/urin überall|eingenässt/g,"harninkontinenz");
+text = text.replace(/stuhl verschmiert|eingekotet/g,"stuhl kontaminiert");
+
+/* Emotion */
+text = text.replace(/weinerlich/g,"emotional belastet");
+
+return text;
+}
 }
 </script>
 
