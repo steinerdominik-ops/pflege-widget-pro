@@ -2,16 +2,30 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>JennAI ULTIMATE</title>
+<title>JennAI ULTIMATE MAX</title>
 
 <style>
 body{margin:0;font-family:Inter,Arial;background:#eef2f7;}
-#openBtn{position:fixed;bottom:20px;right:20px;width:80px;height:80px;border-radius:50%;overflow:hidden;cursor:pointer;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
+
+#openBtn{
+position:fixed;bottom:20px;right:20px;width:80px;height:80px;
+border-radius:50%;overflow:hidden;cursor:pointer;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
 #openBtn img{width:100%;height:100%;object-fit:cover;}
 
-#widget{position:fixed;bottom:20px;right:20px;width:380px;height:600px;background:white;border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,0.35);display:none;flex-direction:column;}
+#widget{
+position:fixed;bottom:20px;right:20px;width:380px;height:600px;
+background:white;border-radius:20px;
+box-shadow:0 25px 60px rgba(0,0,0,0.35);
+display:none;flex-direction:column;
+}
 
-.header{background:linear-gradient(135deg,#0f4c81,#3a7bd5);color:white;padding:14px;font-weight:bold;display:flex;justify-content:space-between;}
+.header{
+background:linear-gradient(135deg,#0f4c81,#3a7bd5);
+color:white;padding:14px;font-weight:bold;
+display:flex;justify-content:space-between;
+}
 
 .chat{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px;}
 
@@ -38,7 +52,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <div id="widget">
 <div class="header">
-<span>JennAI ULTIMATE</span>
+<span>JennAI ULTIMATE MAX</span>
 <span onclick="closeWidget()">✖</span>
 </div>
 
@@ -76,53 +90,45 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ===== ULTIMATE NORMALIZE ===== */
+/* ===== NORMALIZE (SMART ENGINE) ===== */
 function normalize(t){
 
 t=t.toLowerCase();
 
-/* ===== ZUSTAND ===== */
-t=t.replace(/az schlecht|sehr schlecht|mies/g,"az reduziert");
-t=t.replace(/müde|schwach|kraftlos|erschöpft/g,"erschöpft");
+/* Zustand */
+t=t.replace(/az schlecht|mies|sehr schlecht/g,"az reduziert");
+t=t.replace(/müde|schwach|kraftlos/g,"erschöpft");
 
-/* ===== ORIENTIERUNG ===== */
-t=t.replace(/zeitlich desorientiert|zeitlich verwirrt/g,"desorientiert zeit");
-t=t.replace(/örtlich desorientiert|örtlich verwirrt/g,"desorientiert ort");
-t=t.replace(/verwirrt|komisch drauf|anders/g,"desorientiert");
+/* Orientierung */
+t=t.replace(/zeitlich.*desorientiert/g,"desorientiert zeit");
+t=t.replace(/örtlich.*desorientiert/g,"desorientiert ort");
+t=t.replace(/verwirrt|komisch/g,"desorientiert");
 
-/* ===== VERHALTEN ===== */
-t=t.replace(/irrt herum|läuft herum|wandert|läuft ständig/g,"unruhig");
+/* Verhalten */
+t=t.replace(/irrt herum|läuft herum|wandert/g,"unruhig");
 t=t.replace(/weglauftendenz|läuft weg/g,"weglaufen");
-t=t.replace(/schreit|brüllt|ruft laut/g,"laut");
+t=t.replace(/schreit|brüllt/g,"laut");
 
-/* ===== ESSEN ===== */
-t=t.replace(/isst nix|isst nicht|nimmt nichts an|verweigert essen/g,"essen verweigert");
+/* Essen/Trinken */
+t=t.replace(/isst.*nicht|nimmt nichts/g,"essen verweigert");
+t=t.replace(/trinkt.*nicht/g,"trinken unzureichend");
 
-/* ===== TRINKEN ===== */
-t=t.replace(/trinkt nicht|trinkt kaum|trinkt wenig/g,"trinken unzureichend");
+/* Emotion */
+t=t.replace(/weinerlich|traurig/g,"emotional");
 
-/* ===== EMOTION ===== */
-t=t.replace(/weinerlich|traurig|emotional/g,"emotional");
+/* Ausscheidung */
+t=t.replace(/urin.*überall|eingenässt/g,"harninkontinenz");
+t=t.replace(/stuhl.*verschmiert/g,"stuhl");
 
-/* ===== AUSSCHIEDUNG ===== */
-t=t.replace(/urin überall|eingenässt|nass/g,"harninkontinenz");
-t=t.replace(/stuhl verschmiert|eingekotet/g,"stuhl");
+/* Schmerzen (alle wichtigen Bereiche) */
+const painAreas=["bein","arm","rücken","kopf","bauch","schulter","knie","fuß","hüfte","nacken","brust"];
 
-/* ===== SCHMERZ ===== */
-t=t.replace(/beinschmerzen|schmerzen im bein/g,"schmerz bein");
-t=t.replace(/armschmerzen/g,"schmerz arm");
-t=t.replace(/rückenschmerzen/g,"schmerz rücken");
-t=t.replace(/kopfschmerzen/g,"schmerz kopf");
-t=t.replace(/bauchschmerzen/g,"schmerz bauch");
-t=t.replace(/schulterschmerzen/g,"schmerz schulter");
-t=t.replace(/knieschmerzen/g,"schmerz knie");
-t=t.replace(/fußschmerzen/g,"schmerz fuß");
-t=t.replace(/hüftschmerzen/g,"schmerz hüfte");
-t=t.replace(/nackenschmerzen/g,"schmerz nacken");
-t=t.replace(/brustschmerzen/g,"schmerz brust");
+painAreas.forEach(p=>{
+let regex=new RegExp(p+"schmerzen|schmerzen im "+p,"g");
+t=t.replace(regex,"schmerz "+p);
+});
 
 return t;
-}
 }
 
 /* ===== REPORT ENGINE ===== */
@@ -141,29 +147,23 @@ r.push("Bewohner wirkte körperlich erschöpft");
 }
 
 /* Orientierung */
-if(t.includes("desorientiert zeit")){
-r.push("Bewohner zeigte sich zeitlich desorientiert");
-}
-if(t.includes("desorientiert ort")){
-r.push("Bewohner zeigte sich örtlich desorientiert");
-}
-if(t.includes("desorientiert")){
-r.push("Bewohner zeigte sich desorientiert");
-}
+if(t.includes("desorientiert zeit")) r.push("Bewohner zeigte sich zeitlich desorientiert");
+if(t.includes("desorientiert ort")) r.push("Bewohner zeigte sich örtlich desorientiert");
+if(t.includes("desorientiert")) r.push("Bewohner zeigte sich desorientiert");
 
 /* Schmerz */
 const painMap={
-"bein":"unteren Extremität",
-"arm":"oberen Extremität",
-"rücken":"Rückenbereich",
-"kopf":"Kopfbereich",
-"bauch":"Abdomen",
-"schulter":"Schulterbereich",
-"knie":"Kniebereich",
-"fuß":"Fußbereich",
-"hüfte":"Hüftbereich",
-"nacken":"Nackenbereich",
-"brust":"Thoraxbereich"
+bein:"unteren Extremität",
+arm:"oberen Extremität",
+rücken:"Rückenbereich",
+kopf:"Kopfbereich",
+bauch:"Abdomen",
+schulter:"Schulterbereich",
+knie:"Kniebereich",
+fuß:"Fußbereich",
+hüfte:"Hüftbereich",
+nacken:"Nackenbereich",
+brust:"Thoraxbereich"
 };
 
 for(let k in painMap){
@@ -197,17 +197,11 @@ risks.add("Dehydratation");
 }
 
 /* Ausscheidung */
-if(t.includes("harninkontinenz")){
-r.push("Harninkontinenz wurde festgestellt");
-}
-if(t.includes("stuhl")){
-r.push("Stuhlkontamination wurde festgestellt");
-}
+if(t.includes("harninkontinenz")) r.push("Harninkontinenz wurde festgestellt");
+if(t.includes("stuhl")) r.push("Stuhlkontamination wurde festgestellt");
 
 /* Emotion */
-if(t.includes("emotional")){
-r.push("Bewohner zeigte sich emotional belastet");
-}
+if(t.includes("emotional")) r.push("Bewohner zeigte sich emotional belastet");
 
 /* FINAL */
 let out=r.join(". ") + ".";
@@ -222,9 +216,8 @@ out="Es zeigten sich keine relevanten Auffälligkeiten.";
 
 return out;
 }
-}
 
-/* ===== KI (OPTIONAL) ===== */
+/* ===== KI ===== */
 async function hfAI(text){
 
 try{
@@ -260,7 +253,7 @@ addMessage(report,"ai");
 
 lastOutput=report;
 
-/* KI Upgrade */
+/* KI */
 let ai=await hfAI(norm);
 if(ai && ai.length>report.length){
 chat.lastChild.innerText=ai;
