@@ -2,31 +2,16 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>JennAI</title>
+<title>JennAI ULTIMATE</title>
 
 <style>
-body{margin:0;font-family:Inter, Arial;background:#eef2f7;}
-
-#openBtn{
-position:fixed;bottom:20px;right:20px;width:80px;height:80px;
-border-radius:50%;overflow:hidden;cursor:pointer;
-box-shadow:0 10px 25px rgba(0,0,0,0.3);
-}
-
+body{margin:0;font-family:Inter,Arial;background:#eef2f7;}
+#openBtn{position:fixed;bottom:20px;right:20px;width:80px;height:80px;border-radius:50%;overflow:hidden;cursor:pointer;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
 #openBtn img{width:100%;height:100%;object-fit:cover;}
 
-#widget{
-position:fixed;bottom:20px;right:20px;width:380px;height:600px;
-background:white;border-radius:20px;
-box-shadow:0 25px 60px rgba(0,0,0,0.35);
-display:none;flex-direction:column;overflow:hidden;
-}
+#widget{position:fixed;bottom:20px;right:20px;width:380px;height:600px;background:white;border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,0.35);display:none;flex-direction:column;}
 
-.header{
-background:linear-gradient(135deg,#0f4c81,#3a7bd5);
-color:white;padding:14px;font-weight:bold;
-display:flex;justify-content:space-between;
-}
+.header{background:linear-gradient(135deg,#0f4c81,#3a7bd5);color:white;padding:14px;font-weight:bold;display:flex;justify-content:space-between;}
 
 .chat{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px;}
 
@@ -39,7 +24,6 @@ textarea{width:100%;height:60px;border-radius:12px;padding:10px;}
 
 .btnRow{display:flex;gap:6px;margin-top:6px;}
 button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
-
 .generate{background:#0f4c81;color:white;}
 .copy{background:#27ae60;color:white;}
 .reset{background:#c0392b;color:white;}
@@ -54,7 +38,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <div id="widget">
 <div class="header">
-<span>JennAI</span>
+<span>JennAI ULTIMATE</span>
 <span onclick="closeWidget()">✖</span>
 </div>
 
@@ -68,13 +52,12 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 <button class="copy" onclick="copyText()">Kopieren</button>
 <button class="reset" onclick="resetAll()">Reset</button>
 </div>
-
 </div>
 </div>
 
 <script>
 
-/* DOM */
+/* ===== BASIS ===== */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -82,11 +65,9 @@ const chat=document.getElementById("chat");
 
 let lastOutput="";
 
-/* UI */
 function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
 function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
-/* CHAT */
 function addMessage(text,type){
 let div=document.createElement("div");
 div.className="msg "+type;
@@ -95,150 +76,172 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ================= NORMALIZE ================= */
-function normalize(text){
+/* ===== ULTIMATE NORMALIZE ===== */
+function normalize(t){
 
-text = text.toLowerCase();
+t=t.toLowerCase();
 
-text = text.replace(/az schlecht|mies/g,"allgemeinzustand reduziert");
-text = text.replace(/irrt herum|läuft herum/g,"unruhig");
-text = text.replace(/schreit|brüllt/g,"laut");
-text = text.replace(/isst nix|isst nicht/g,"essen verweigert");
-text = text.replace(/trinkt nicht/g,"trinken unzureichend");
-text = text.replace(/beinschmerzen/g,"schmerz bein");
-text = text.replace(/weinerlich/g,"emotional belastet");
-text = text.replace(/urin überall|eingenässt/g,"harninkontinenz");
-text = text.replace(/stuhl verschmiert/g,"stuhl kontaminiert");
+/* Zustand */
+t=t.replace(/az schlecht|mies|sehr schlecht/g,"az reduziert");
+t=t.replace(/müde|schwach|kraftlos/g,"erschöpft");
 
-return text;
+/* Verhalten */
+t=t.replace(/irrt herum|läuft herum|wandert/g,"unruhig");
+t=t.replace(/weglauftendenz|läuft weg/g,"weglaufen");
+t=t.replace(/schreit|brüllt/g,"laut");
+
+/* Essen/Trinken */
+t=t.replace(/isst nix|isst nicht|nimmt nichts/g,"essen verweigert");
+t=t.replace(/trinkt nicht|trinkt kaum/g,"trinken unzureichend");
+
+/* Emotion */
+t=t.replace(/weinerlich|traurig/g,"emotional");
+
+/* Ausscheidung */
+t=t.replace(/urin überall|eingenässt/g,"harninkontinenz");
+t=t.replace(/stuhl verschmiert|eingekotet/g,"stuhl");
+
+/* SCHMERZ KOMPLETT */
+t=t.replace(/beinschmerzen|schmerzen im bein/g,"schmerz bein");
+t=t.replace(/armschmerzen/g,"schmerz arm");
+t=t.replace(/rückenschmerzen/g,"schmerz rücken");
+t=t.replace(/kopfschmerzen/g,"schmerz kopf");
+t=t.replace(/bauchschmerzen/g,"schmerz bauch");
+t=t.replace(/schulterschmerzen/g,"schmerz schulter");
+t=t.replace(/knieschmerzen/g,"schmerz knie");
+t=t.replace(/fußschmerzen/g,"schmerz fuß");
+t=t.replace(/hüftschmerzen/g,"schmerz hüfte");
+t=t.replace(/nackenschmerzen/g,"schmerz nacken");
+t=t.replace(/brustschmerzen/g,"schmerz brust");
+
+return t;
 }
 
-/* ================= BUILD REPORT ================= */
-function buildReport(text){
+/* ===== REPORT ENGINE ===== */
+function buildReport(t){
 
 let r=[];
 let risks=new Set();
 
 /* Zustand */
-if(text.includes("allgemeinzustand reduziert")){
+if(t.includes("az reduziert")){
 r.push("Der Allgemeinzustand zeigte sich reduziert");
 risks.add("allgemeine Schwäche");
 }
 
 /* Schmerz */
-if(text.includes("schmerz")){
-r.push("Bewohner äußerte Schmerzen");
+const painMap={
+"bein":"unteren Extremität",
+"arm":"oberen Extremität",
+"rücken":"Rückenbereich",
+"kopf":"Kopfbereich",
+"bauch":"Abdomen",
+"schulter":"Schulterbereich",
+"knie":"Kniebereich",
+"fuß":"Fußbereich",
+"hüfte":"Hüftbereich",
+"nacken":"Nackenbereich",
+"brust":"Thoraxbereich"
+};
+
+for(let k in painMap){
+if(t.includes("schmerz "+k)){
+r.push("Bewohner äußerte Schmerzen im Bereich der "+painMap[k]);
 risks.add("Schmerzbelastung");
+}
 }
 
 /* Verhalten */
-if(text.includes("unruhig")){
+if(t.includes("unruhig")){
 r.push("Es zeigte sich motorische Unruhe mit Umhergehen");
 risks.add("Sturzrisiko");
 }
-if(text.includes("laut")){
+if(t.includes("weglaufen")){
+r.push("Es bestand eine Weglauftendenz");
+risks.add("Eigengefährdung");
+}
+if(t.includes("laut")){
 r.push("Wiederholte Lautäußerungen wurden beobachtet");
 }
 
 /* Ernährung */
-if(text.includes("essen verweigert")){
+if(t.includes("essen verweigert")){
 r.push("Die Nahrungsaufnahme wurde nicht angenommen");
 risks.add("Mangelernährung");
 }
-if(text.includes("trinken unzureichend")){
+if(t.includes("trinken unzureichend")){
 r.push("Die Trinkmenge war unzureichend");
 risks.add("Dehydratation");
 }
 
 /* Ausscheidung */
-if(text.includes("harninkontinenz")){
+if(t.includes("harninkontinenz")){
 r.push("Harninkontinenz wurde festgestellt");
 }
-if(text.includes("stuhl kontaminiert")){
+if(t.includes("stuhl")){
 r.push("Stuhlkontamination wurde festgestellt");
 }
 
 /* Emotion */
-if(text.includes("emotional belastet")){
+if(t.includes("emotional")){
 r.push("Bewohner zeigte sich emotional belastet");
 }
 
 /* FINAL */
-let textOut=r.join(". ") + ".";
+let out=r.join(". ") + ".";
 
 if(risks.size){
-textOut += " Es bestehen Risiken hinsichtlich " + [...risks].join(", ") + ".";
+out+=" Es bestehen Risiken hinsichtlich "+[...risks].join(", ")+".";
 }
 
-if(textOut==="." || textOut.trim()===""){
-textOut="Es zeigten sich keine relevanten Auffälligkeiten.";
+if(out==="." || out.trim()===""){
+out="Es zeigten sich keine relevanten Auffälligkeiten.";
 }
 
-return textOut;
+return out;
 }
 
-/* ================= KI ================= */
+/* ===== KI (OPTIONAL) ===== */
 async function hfAI(text){
 
 try{
-let res = await fetch(
-"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
-{
+let res=await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",{
 method:"POST",
 headers:{
 "Authorization":"Bearer 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",
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-inputs:`
-Erstelle einen professionellen Pflegebericht:
-
-- mehrere Sätze
-- sachlich und wertfrei
-- Fachsprache
-- Risiken benennen
-
-Text:
-${text}
-`
+inputs:`Erstelle einen professionellen Pflegebericht aus Stichwörtern, sachlich, mehrere Sätze, Fachsprache: ${text}`
 })
 });
 
-let data = await res.json();
-
-if(Array.isArray(data)){
-return data[0]?.generated_text;
-}
+let data=await res.json();
+if(Array.isArray(data)) return data[0]?.generated_text;
 
 }catch(e){return null;}
-
 }
 
-/* ================= GENERATE ================= */
+/* ===== GENERATE ===== */
 async function generate(){
 
-let raw = input.value;
-
+let raw=input.value;
 if(!raw) return;
 
-/* USER */
 addMessage(raw,"user");
 
-/* NORMALIZE */
-let norm = normalize(raw);
+let norm=normalize(raw);
 
-/* LOCAL */
-let report = buildReport(norm);
+let report=buildReport(norm);
 addMessage(report,"ai");
 
-lastOutput = report;
+lastOutput=report;
 
-/* KI */
-let ai = await hfAI(norm);
-
-if(ai && ai.length > report.length){
-chat.lastChild.innerText = ai;
-lastOutput = ai;
+/* KI Upgrade */
+let ai=await hfAI(norm);
+if(ai && ai.length>report.length){
+chat.lastChild.innerText=ai;
+lastOutput=ai;
 }
 
 input.value="";
