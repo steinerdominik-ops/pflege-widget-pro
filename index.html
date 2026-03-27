@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>CareDoc AI</title>
+<title>Jenn AI</title>
 
 <style>
 body{margin:0;font-family:Inter,Arial;background:#eef2f7;}
@@ -62,7 +62,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <div id="widget">
 <div class="header">
-<span>CareDoc AI</span>
+<span>Jenn AI</span>
 <span onclick="closeWidget()">✖</span>
 </div>
 
@@ -82,7 +82,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <script>
 
-/* ===== BASIS ===== */
+/* UI */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -91,7 +91,6 @@ const riskPanel=document.getElementById("riskPanel");
 
 let lastOutput="";
 
-/* UI */
 function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
 function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
@@ -103,60 +102,22 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ===== RISIKEN ===== */
+/* RISIKEN */
 function detectRisks(t){
 t=t.toLowerCase();
 let r=[];
 
-if(/unruhig|irrt|weglaufen|wandert/.test(t)) r.push("Sturzrisiko / Eigengefährdung");
-if(/trinkt.*nicht|trinkt kaum/.test(t)) r.push("Dehydratationsrisiko");
-if(/isst.*nicht|verweigert/.test(t)) r.push("Mangelernährung");
+if(/unruhig|irrt|weglaufen|wandert/.test(t)) r.push("Sturzrisiko");
+if(/trink|flüssig/.test(t)&&/nicht|wenig/.test(t)) r.push("Dehydratation");
+if(/ess|nahrung/.test(t)&&/nicht|verwe/.test(t)) r.push("Mangelernährung");
 if(/schmerz|aua/.test(t)) r.push("Schmerzbelastung");
-if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautschädigungsrisiko");
-if(/atemnot|luft|kurzatmig/.test(t)) r.push("akute Atemproblematik");
+if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautschädigung");
+if(/atem|luft/.test(t)) r.push("Atemproblem");
 
 return [...new Set(r)];
 }
 
-/* ===== LOKALE BACKUP KI ===== */
-function localAI(text){
-
-text=text.toLowerCase();
-let s=[];
-
-if(/schlecht|müde|schwach/.test(text))
-s.push("Der Allgemeinzustand zeigte sich reduziert.");
-
-if(/verwirrt|desorientiert/.test(text))
-s.push("Der Bewohner zeigte sich desorientiert.");
-
-if(/unruhig|irrt|läuft/.test(text))
-s.push("Es zeigte sich motorische Unruhe mit Umhergehen.");
-
-if(/schreit|laut/.test(text))
-s.push("Wiederholte Lautäußerungen wurden beobachtet.");
-
-if(/schmerz/.test(text))
-s.push("Der Bewohner äußerte Schmerzen.");
-
-if(/isst.*nicht/.test(text))
-s.push("Die Nahrungsaufnahme wurde nicht angenommen.");
-
-if(/trinkt.*nicht/.test(text))
-s.push("Die Trinkmenge war unzureichend.");
-
-if(/stuhl/.test(text))
-s.push("Stuhlkontamination wurde festgestellt.");
-
-if(/urin|inkontinenz/.test(text))
-s.push("Harninkontinenz wurde festgestellt.");
-
-if(!s.length) return "Es zeigten sich keine relevanten Auffälligkeiten.";
-
-return s.join(" ");
-}
-
-/* ===== ECHTE KI + FALLBACK ===== */
+/* 🔥 ECHTE KI (ALLE WÖRTER) */
 async function realAI(text){
 
 try{
@@ -173,13 +134,21 @@ messages:[
 role:"system",
 content:`Du bist eine professionelle Pflegefachkraft.
 
-Erstelle einen vollständigen Pflegebericht.
+AUFGABE:
+Verarbeite jede Eingabe vollständig – auch mit Tippfehlern, Dialekt oder unklarer Sprache.
 
-- ALLE Inhalte verwenden
-- auch Dialekt verstehen
-- medizinisch korrekt
-- KEINE Risiken erwähnen
+Erstelle einen vollständigen Pflegebericht:
+
+- ALLE Informationen verwenden
+- keine Information auslassen
+- keine Interpretation hinzufügen
+- sachlich und fachlich korrekt
+- medizinische Fachsprache
 - vollständige Sätze
+- KEINE Risiken erwähnen
+
+STRUKTUR:
+Allgemeinzustand → Orientierung → Verhalten → körperliche Beobachtungen → Maßnahmen
 `
 },
 {
@@ -196,14 +165,14 @@ if(data?.choices?.[0]?.message?.content){
 return data.choices[0].message.content;
 }
 
-return localAI(text);
+return "Keine KI Antwort";
 
 }catch(e){
-return localAI(text);
+return "Verbindungsfehler – prüfe API Key";
 }
 }
 
-/* ===== GENERATE ===== */
+/* GENERATE */
 async function generate(){
 
 let raw=input.value;
@@ -223,10 +192,10 @@ riskPanel.appendChild(box);
 }
 
 /* KI */
-let ai=await realAI(raw);
+let result=await realAI(raw);
 
-addMessage(ai,"ai");
-lastOutput=ai;
+addMessage(result,"ai");
+lastOutput=result;
 
 input.value="";
 }
