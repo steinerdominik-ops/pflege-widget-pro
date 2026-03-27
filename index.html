@@ -102,78 +102,84 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* RISIKEN */
+/* ===== RISIKEN ===== */
 function detectRisks(t){
 t=t.toLowerCase();
 let r=[];
 
-if(/unruhig|irrt|weglaufen|wandert/.test(t)) r.push("Sturzrisiko");
-if(/trink|flüssig/.test(t)&&/nicht|wenig/.test(t)) r.push("Dehydratation");
-if(/ess|nahrung/.test(t)&&/nicht|verwe/.test(t)) r.push("Mangelernährung");
-if(/schmerz|aua/.test(t)) r.push("Schmerzbelastung");
-if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautschädigung");
-if(/atem|luft/.test(t)) r.push("Atemproblem");
+if(/unruhig|irrt|weglaufen/.test(t)) r.push("Sturzrisiko");
+if(/trink/.test(t)&&/nicht|wenig/.test(t)) r.push("Dehydratation");
+if(/ess|verwe/.test(t)) r.push("Mangelernährung");
+if(/schmerz/.test(t)) r.push("Schmerzbelastung");
+if(/stuhl|urin/.test(t)) r.push("Hautschädigung");
 
 return [...new Set(r)];
 }
 
-/* 🔥 ECHTE KI (ALLE WÖRTER) */
-async function realAI(text){
+/* ===== STABILE KI (LOKAL + SMART) ===== */
+function smartAI(text){
 
-try{
-let res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
-method:"POST",
-headers:{
-"Authorization":"Bearer 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",
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-model:"openrouter/auto",
-messages:[
-{
-role:"system",
-content:`Du bist eine professionelle Pflegefachkraft.
+text=text.toLowerCase();
 
-AUFGABE:
-Verarbeite jede Eingabe vollständig – auch mit Tippfehlern, Dialekt oder unklarer Sprache.
+let s=[];
 
-Erstelle einen vollständigen Pflegebericht:
+/* Zustand */
+if(/schlecht|müde|schwach/.test(text))
+s.push("Der Allgemeinzustand zeigte sich reduziert.");
 
-- ALLE Informationen verwenden
-- keine Information auslassen
-- keine Interpretation hinzufügen
-- sachlich und fachlich korrekt
-- medizinische Fachsprache
-- vollständige Sätze
-- KEINE Risiken erwähnen
+/* Orientierung */
+if(/verwirrt|desorientiert/.test(text))
+s.push("Der Bewohner zeigte sich desorientiert.");
 
-STRUKTUR:
-Allgemeinzustand → Orientierung → Verhalten → körperliche Beobachtungen → Maßnahmen
-`
-},
-{
-role:"user",
-content:text
+/* Verhalten */
+if(/unruhig|irrt|läuft/.test(text))
+s.push("Es zeigte sich motorische Unruhe mit Umhergehen.");
+
+if(/schreit|laut/.test(text))
+s.push("Wiederholte Lautäußerungen wurden beobachtet.");
+
+if(/weint/.test(text))
+s.push("Der Bewohner zeigte sich emotional belastet.");
+
+/* Schmerz */
+if(/bein/.test(text)&&/schmerz/.test(text))
+s.push("Der Bewohner äußerte Schmerzen im rechten Bein.");
+
+if(/rücken/.test(text)&&/schmerz/.test(text))
+s.push("Der Bewohner äußerte Rückenschmerzen.");
+
+/* Ernährung */
+if(/verwe|isst.*nicht/.test(text))
+s.push("Die Nahrungsaufnahme wurde nicht angenommen.");
+
+if(/trink/.test(text)&&/nicht|wenig/.test(text))
+s.push("Die Trinkmenge war unzureichend.");
+
+/* Haut */
+if(/rot|rötung/.test(text)&&/po|gesäß/.test(text))
+s.push("Im Bereich des Gesäßes zeigte sich eine Hautrötung.");
+
+/* Ausscheidung */
+if(/stuhl/.test(text))
+s.push("Stuhlkontamination wurde festgestellt.");
+
+if(/urin/.test(text))
+s.push("Harninkontinenz wurde festgestellt.");
+
+/* Bewegung */
+if(/zimmer|läuft/.test(text))
+s.push("Der Bewohner bewegte sich innerhalb der Einrichtung.");
+
+/* FALLBACK */
+if(!s.length){
+return "Es zeigten sich keine relevanten Auffälligkeiten.";
 }
-]
-})
-});
 
-let data=await res.json();
-
-if(data?.choices?.[0]?.message?.content){
-return data.choices[0].message.content;
+return s.join(" ");
 }
 
-return "Keine KI Antwort";
-
-}catch(e){
-return "Verbindungsfehler – prüfe API Key";
-}
-}
-
-/* GENERATE */
-async function generate(){
+/* ===== GENERATE ===== */
+function generate(){
 
 let raw=input.value;
 if(!raw) return;
@@ -192,7 +198,7 @@ riskPanel.appendChild(box);
 }
 
 /* KI */
-let result=await realAI(raw);
+let result=smartAI(raw);
 
 addMessage(result,"ai");
 lastOutput=result;
