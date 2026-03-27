@@ -82,7 +82,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <script>
 
-/* UI */
+/* ===== BASIS ===== */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -91,6 +91,7 @@ const riskPanel=document.getElementById("riskPanel");
 
 let lastOutput="";
 
+/* UI */
 function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
 function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
@@ -102,70 +103,108 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* RISIKEN */
+/* ===== RISIKEN ===== */
 function detectRisks(t){
 t=t.toLowerCase();
 let r=[];
 
-if(/unruhig|irrt|weglaufen/.test(t)) r.push("Sturzrisiko");
-if(/trinkt.*nicht/.test(t)) r.push("Dehydratation");
-if(/isst.*nicht/.test(t)) r.push("Mangelernährung");
+if(/unruhig|irrt|weglaufen|wandert/.test(t)) r.push("Sturzrisiko / Eigengefährdung");
+if(/trinkt.*nicht|trinkt kaum/.test(t)) r.push("Dehydratationsrisiko");
+if(/isst.*nicht|verweigert/.test(t)) r.push("Mangelernährung");
 if(/schmerz|aua/.test(t)) r.push("Schmerzbelastung");
-if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautrisiko");
-if(/atemnot/.test(t)) r.push("Atemproblem");
+if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautschädigungsrisiko");
+if(/atemnot|luft|kurzatmig/.test(t)) r.push("akute Atemproblematik");
 
 return [...new Set(r)];
 }
 
-/* KI ENGINE (STABIL) */
+/* ===== LOKALE BACKUP KI ===== */
 function localAI(text){
 
 text=text.toLowerCase();
-
 let s=[];
 
-/* Zustand */
 if(/schlecht|müde|schwach/.test(text))
 s.push("Der Allgemeinzustand zeigte sich reduziert.");
 
-/* Orientierung */
 if(/verwirrt|desorientiert/.test(text))
 s.push("Der Bewohner zeigte sich desorientiert.");
 
-/* Verhalten */
 if(/unruhig|irrt|läuft/.test(text))
 s.push("Es zeigte sich motorische Unruhe mit Umhergehen.");
 
 if(/schreit|laut/.test(text))
 s.push("Wiederholte Lautäußerungen wurden beobachtet.");
 
-/* Schmerz */
-if(/bein/.test(text) && /schmerz/.test(text))
-s.push("Der Bewohner äußerte Schmerzen im Bereich der unteren Extremität.");
+if(/schmerz/.test(text))
+s.push("Der Bewohner äußerte Schmerzen.");
 
-/* Essen */
 if(/isst.*nicht/.test(text))
 s.push("Die Nahrungsaufnahme wurde nicht angenommen.");
 
-/* Trinken */
 if(/trinkt.*nicht/.test(text))
 s.push("Die Trinkmenge war unzureichend.");
 
-/* Ausscheidung */
 if(/stuhl/.test(text))
 s.push("Stuhlkontamination wurde festgestellt.");
 
 if(/urin|inkontinenz/.test(text))
 s.push("Harninkontinenz wurde festgestellt.");
 
-/* FINAL */
 if(!s.length) return "Es zeigten sich keine relevanten Auffälligkeiten.";
 
 return s.join(" ");
 }
 
-/* GENERATE */
-function generate(){
+/* ===== ECHTE KI + FALLBACK ===== */
+async function realAI(text){
+
+try{
+let res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+method:"POST",
+headers:{
+"Authorization":"Bearer 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",
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+model:"openrouter/auto",
+messages:[
+{
+role:"system",
+content:`Du bist eine professionelle Pflegefachkraft.
+
+Erstelle einen vollständigen Pflegebericht.
+
+- ALLE Inhalte verwenden
+- auch Dialekt verstehen
+- medizinisch korrekt
+- KEINE Risiken erwähnen
+- vollständige Sätze
+`
+},
+{
+role:"user",
+content:text
+}
+]
+})
+});
+
+let data=await res.json();
+
+if(data?.choices?.[0]?.message?.content){
+return data.choices[0].message.content;
+}
+
+return localAI(text);
+
+}catch(e){
+return localAI(text);
+}
+}
+
+/* ===== GENERATE ===== */
+async function generate(){
 
 let raw=input.value;
 if(!raw) return;
@@ -184,7 +223,7 @@ riskPanel.appendChild(box);
 }
 
 /* KI */
-let ai=localAI(raw);
+let ai=await realAI(raw);
 
 addMessage(ai,"ai");
 lastOutput=ai;
