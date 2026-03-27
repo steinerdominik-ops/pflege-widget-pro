@@ -119,12 +119,12 @@ if(/atemnot|luft|kurzatmig/.test(t)) risks.push("akute Atemproblematik");
 return [...new Set(risks)];
 }
 
-/* ===== OPTIMIERTE KI MIT FALLBACK ===== */
+/* ===== KI MIT FALLBACK ===== */
 async function realAI(text){
 
 const models=[
-"openchat/openchat-3.5",
-"mistralai/mistral-7b-instruct"
+"mistralai/mistral-7b-instruct",
+"nousresearch/nous-hermes-2-mistral-7b"
 ];
 
 for(let model of models){
@@ -133,7 +133,7 @@ try{
 let res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
 method:"POST",
 headers:{
-"Authorization":"Bearer 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",
+"Authorization":"Bearer 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",
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
@@ -141,28 +141,19 @@ model:model,
 messages:[
 {
 role:"system",
-content:`Du bist eine erfahrene diplomierte Pflegefachkraft.
+content:`Du bist eine professionelle Pflegefachkraft.
 
-AUFGABE:
-Erstelle einen vollständigen, professionellen Pflegebericht.
+Erstelle einen vollständigen Pflegebericht:
 
-WICHTIG:
-- Verarbeite ALLE Inhalte der Eingabe vollständig
-- Verstehe Dialekt, Umgangssprache und unstrukturierte Texte
-- KEINE Risiken im Text erwähnen
-- KEINE Stichpunkte
-
-SPRACHE:
-- medizinisch korrekt
+- ALLE Inhalte verwenden
+- Dialekt verstehen
 - sachlich
+- medizinische Fachsprache
+- KEINE Risiken erwähnen
 - vollständige Sätze
 
 STRUKTUR:
-1. Allgemeinzustand
-2. Orientierung
-3. Verhalten
-4. Körperliche Beobachtungen
-5. Maßnahmen
+Allgemeinzustand, Orientierung, Verhalten, körperliche Beobachtungen, Maßnahmen
 `
 },
 {
@@ -175,15 +166,19 @@ content:text
 
 let data=await res.json();
 
+console.log("MODEL:", model, data);
+
 if(data?.choices?.[0]?.message?.content){
 return data.choices[0].message.content;
 }
 
-}catch(e){}
+}catch(e){
+console.log("ERROR:", e);
+}
 
 }
 
-return "KI aktuell nicht verfügbar";
+return "KI aktuell nicht verfügbar (API / Modell prüfen)";
 }
 
 /* ===== GENERATE ===== */
