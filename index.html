@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Jenn AI</title>
+<title>CareDoc AI</title>
 
 <style>
 body{margin:0;font-family:Inter,Arial;background:#eef2f7;}
@@ -15,7 +15,7 @@ box-shadow:0 10px 25px rgba(0,0,0,0.3);
 #openBtn img{width:100%;height:100%;object-fit:cover;}
 
 #widget{
-position:fixed;bottom:20px;right:20px;width:380px;height:600px;
+position:fixed;bottom:20px;right:20px;width:420px;height:680px;
 background:white;border-radius:20px;
 box-shadow:0 25px 60px rgba(0,0,0,0.35);
 display:none;flex-direction:column;
@@ -32,6 +32,16 @@ display:flex;justify-content:space-between;
 .msg{padding:10px 14px;border-radius:16px;max-width:85%;}
 .user{background:#e3f2fd;align-self:flex-end;}
 .ai{background:#f1f3f6;align-self:flex-start;}
+
+.riskBox{
+background:#fff3cd;
+border-left:5px solid #ff9800;
+padding:10px;
+font-size:13px;
+margin:8px;
+border-radius:10px;
+white-space:pre-line;
+}
 
 .inputArea{padding:10px;border-top:1px solid #eee;}
 textarea{width:100%;height:60px;border-radius:12px;padding:10px;}
@@ -52,10 +62,11 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <div id="widget">
 <div class="header">
-<span>Jenn AI</span>
+<span>CareDoc AI</span>
 <span onclick="closeWidget()">✖</span>
 </div>
 
+<div id="riskPanel"></div>
 <div class="chat" id="chat"></div>
 
 <div class="inputArea">
@@ -76,9 +87,11 @@ const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
 const chat=document.getElementById("chat");
+const riskPanel=document.getElementById("riskPanel");
 
 let lastOutput="";
 
+/* UI */
 function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
 function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
@@ -90,153 +103,87 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ===== ULTRA NORMALIZE ===== */
-function normalize(t){
+/* ===== RISIKO ENGINE ===== */
+function detectRisks(t){
 
 t=t.toLowerCase();
+let risks=[];
 
-/* Zustand */
-t=t.replace(/az.*schlecht|mies|kritisch/g,"az reduziert");
-t=t.replace(/müde|schwach|kraftlos|erschöpft/g,"erschöpft");
+if(/unruhig|weglaufen|irrt|wandert/.test(t)) risks.push("Sturzrisiko / Eigengefährdung");
+if(/trinkt.*nicht|trinkt kaum/.test(t)) risks.push("Dehydratationsrisiko");
+if(/isst.*nicht|verweigert essen/.test(t)) risks.push("Mangelernährung");
+if(/schmerz|aua/.test(t)) risks.push("Schmerzbelastung");
+if(/inkontinenz|stuhl|urin/.test(t)) risks.push("Hautschädigungsrisiko");
+if(/atemnot|luft|kurzatmig/.test(t)) risks.push("akute Atemproblematik");
 
-/* Orientierung */
-t=t.replace(/zeitlich.*verwirrt/g,"desorientiert zeit");
-t=t.replace(/örtlich.*verwirrt/g,"desorientiert ort");
-t=t.replace(/verwirrt|komisch|anders/g,"desorientiert");
-
-/* Verhalten */
-t=t.replace(/irrt herum|läuft herum|wandert/g,"unruhig");
-t=t.replace(/weglauftendenz|läuft weg/g,"weglaufen");
-t=t.replace(/schreit|brüllt|ruft/g,"laut");
-
-/* Essen */
-t=t.replace(/isst.*nicht|nimmt nichts/g,"essen verweigert");
-
-/* Trinken */
-t=t.replace(/trinkt.*nicht/g,"trinken unzureichend");
-
-/* Emotion */
-t=t.replace(/weinerlich|traurig/g,"emotional");
-
-/* Ausscheidung */
-t=t.replace(/urin.*überall|eingenässt/g,"harninkontinenz");
-t=t.replace(/stuhl.*verschmiert/g,"stuhl");
-
-/* Schmerz (alle wichtigen Bereiche) */
-const painAreas=["bein","arm","rücken","kopf","bauch","schulter","knie","fuß","hüfte","nacken","brust"];
-painAreas.forEach(p=>{
-let regex=new RegExp(p+"schmerzen|schmerzen im "+p,"g");
-t=t.replace(regex,"schmerz "+p);
-});
-
-return t;
+return [...new Set(risks)];
 }
 
-/* ===== REPORT ENGINE ===== */
-function buildReport(t){
+/* ===== OPTIMIERTE KI MIT FALLBACK ===== */
+async function realAI(text){
 
-let r=[];
-let risks=new Set();
+const models=[
+"openchat/openchat-3.5",
+"mistralai/mistral-7b-instruct"
+];
 
-/* Zustand */
-if(t.includes("az reduziert")){
-r.push("Der Allgemeinzustand zeigte sich reduziert");
-risks.add("allgemeine Schwäche");
-}
-if(t.includes("erschöpft")){
-r.push("Bewohner wirkte körperlich erschöpft");
-}
-
-/* Orientierung */
-if(t.includes("desorientiert zeit")) r.push("Bewohner zeigte sich zeitlich desorientiert");
-if(t.includes("desorientiert ort")) r.push("Bewohner zeigte sich örtlich desorientiert");
-if(t.includes("desorientiert")) r.push("Bewohner zeigte sich desorientiert");
-
-/* Schmerz */
-const painMap={
-bein:"unteren Extremität",
-arm:"oberen Extremität",
-rücken:"Rückenbereich",
-kopf:"Kopfbereich",
-bauch:"Abdomen",
-schulter:"Schulterbereich",
-knie:"Kniebereich",
-fuß:"Fußbereich",
-hüfte:"Hüftbereich",
-nacken:"Nackenbereich",
-brust:"Thoraxbereich"
-};
-
-for(let k in painMap){
-if(t.includes("schmerz "+k)){
-r.push("Bewohner äußerte Schmerzen im Bereich der "+painMap[k]);
-risks.add("Schmerzbelastung");
-}
-}
-
-/* Verhalten */
-if(t.includes("unruhig")){
-r.push("Es zeigte sich motorische Unruhe mit Umhergehen");
-risks.add("Sturzrisiko");
-}
-if(t.includes("weglaufen")){
-r.push("Es bestand eine Weglauftendenz");
-risks.add("Eigengefährdung");
-}
-if(t.includes("laut")){
-r.push("Wiederholte Lautäußerungen wurden beobachtet");
-}
-
-/* Ernährung */
-if(t.includes("essen verweigert")){
-r.push("Die Nahrungsaufnahme wurde nicht angenommen");
-risks.add("Mangelernährung");
-}
-if(t.includes("trinken unzureichend")){
-r.push("Die Trinkmenge war unzureichend");
-risks.add("Dehydratation");
-}
-
-/* Ausscheidung */
-if(t.includes("harninkontinenz")) r.push("Harninkontinenz wurde festgestellt");
-if(t.includes("stuhl")) r.push("Stuhlkontamination wurde festgestellt");
-
-/* Emotion */
-if(t.includes("emotional")) r.push("Bewohner zeigte sich emotional belastet");
-
-/* FINAL */
-let out=r.join(". ") + ".";
-
-if(risks.size){
-out+=" Es bestehen Risiken hinsichtlich "+[...risks].join(", ")+".";
-}
-
-if(out==="." || out.trim()===""){
-out="Es zeigten sich keine relevanten Auffälligkeiten.";
-}
-
-return out;
-}
-
-/* ===== KI (OPTIONAL) ===== */
-async function hfAI(text){
+for(let model of models){
 
 try{
-let res=await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",{
+let res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
 method:"POST",
 headers:{
-"Authorization":"Bearer hf_JBwBECsykwAvqDUnBJZuLbksvOrzqzsIUaN",
+"Authorization":"Bearer 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",
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-inputs:`Erstelle einen professionellen Pflegebericht aus Stichwörtern, sachlich, mehrere Sätze, Fachsprache: ${text}`
+model:model,
+messages:[
+{
+role:"system",
+content:`Du bist eine erfahrene diplomierte Pflegefachkraft.
+
+AUFGABE:
+Erstelle einen vollständigen, professionellen Pflegebericht.
+
+WICHTIG:
+- Verarbeite ALLE Inhalte der Eingabe vollständig
+- Verstehe Dialekt, Umgangssprache und unstrukturierte Texte
+- KEINE Risiken im Text erwähnen
+- KEINE Stichpunkte
+
+SPRACHE:
+- medizinisch korrekt
+- sachlich
+- vollständige Sätze
+
+STRUKTUR:
+1. Allgemeinzustand
+2. Orientierung
+3. Verhalten
+4. Körperliche Beobachtungen
+5. Maßnahmen
+`
+},
+{
+role:"user",
+content:text
+}
+]
 })
 });
 
 let data=await res.json();
-if(Array.isArray(data)) return data[0]?.generated_text;
 
-}catch(e){return null;}
+if(data?.choices?.[0]?.message?.content){
+return data.choices[0].message.content;
+}
+
+}catch(e){}
+
+}
+
+return "KI aktuell nicht verfügbar";
 }
 
 /* ===== GENERATE ===== */
@@ -247,19 +194,22 @@ if(!raw) return;
 
 addMessage(raw,"user");
 
-let norm=normalize(raw);
+/* RISIKEN */
+let risks=detectRisks(raw);
+riskPanel.innerHTML="";
 
-let report=buildReport(norm);
-addMessage(report,"ai");
-
-lastOutput=report;
-
-/* KI Upgrade */
-let ai=await hfAI(norm);
-if(ai && ai.length>report.length){
-chat.lastChild.innerText=ai;
-lastOutput=ai;
+if(risks.length){
+let box=document.createElement("div");
+box.className="riskBox";
+box.innerText="⚠ Risiken:\n"+risks.join("\n");
+riskPanel.appendChild(box);
 }
+
+/* KI */
+let ai=await realAI(raw);
+
+addMessage(ai,"ai");
+lastOutput=ai;
 
 input.value="";
 }
@@ -275,6 +225,7 @@ function resetAll(){
 chat.innerHTML="";
 input.value="";
 lastOutput="";
+riskPanel.innerHTML="";
 }
 
 </script>
