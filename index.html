@@ -82,7 +82,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <script>
 
-/* ===== BASIS ===== */
+/* UI */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -91,7 +91,6 @@ const riskPanel=document.getElementById("riskPanel");
 
 let lastOutput="";
 
-/* UI */
 function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
 function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
@@ -103,86 +102,70 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ===== RISIKO ENGINE ===== */
+/* RISIKEN */
 function detectRisks(t){
-
 t=t.toLowerCase();
-let risks=[];
+let r=[];
 
-if(/unruhig|weglaufen|irrt|wandert/.test(t)) risks.push("Sturzrisiko / Eigengefährdung");
-if(/trinkt.*nicht|trinkt kaum/.test(t)) risks.push("Dehydratationsrisiko");
-if(/isst.*nicht|verweigert essen/.test(t)) risks.push("Mangelernährung");
-if(/schmerz|aua/.test(t)) risks.push("Schmerzbelastung");
-if(/inkontinenz|stuhl|urin/.test(t)) risks.push("Hautschädigungsrisiko");
-if(/atemnot|luft|kurzatmig/.test(t)) risks.push("akute Atemproblematik");
+if(/unruhig|irrt|weglaufen/.test(t)) r.push("Sturzrisiko");
+if(/trinkt.*nicht/.test(t)) r.push("Dehydratation");
+if(/isst.*nicht/.test(t)) r.push("Mangelernährung");
+if(/schmerz|aua/.test(t)) r.push("Schmerzbelastung");
+if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautrisiko");
+if(/atemnot/.test(t)) r.push("Atemproblem");
 
-return [...new Set(risks)];
+return [...new Set(r)];
 }
 
-/* ===== KI MIT FALLBACK ===== */
-async function realAI(text){
+/* KI ENGINE (STABIL) */
+function localAI(text){
 
-const models=[
-"mistralai/mistral-7b-instruct",
-"nousresearch/nous-hermes-2-mistral-7b"
-];
+text=text.toLowerCase();
 
-for(let model of models){
+let s=[];
 
-try{
-let res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
-method:"POST",
-headers:{
-"Authorization":"Bearer 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",
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-model:model,
-messages:[
-{
-role:"system",
-content:`Du bist eine professionelle Pflegefachkraft.
+/* Zustand */
+if(/schlecht|müde|schwach/.test(text))
+s.push("Der Allgemeinzustand zeigte sich reduziert.");
 
-Erstelle einen vollständigen Pflegebericht:
+/* Orientierung */
+if(/verwirrt|desorientiert/.test(text))
+s.push("Der Bewohner zeigte sich desorientiert.");
 
-- ALLE Inhalte verwenden
-- Dialekt verstehen
-- sachlich
-- medizinische Fachsprache
-- KEINE Risiken erwähnen
-- vollständige Sätze
+/* Verhalten */
+if(/unruhig|irrt|läuft/.test(text))
+s.push("Es zeigte sich motorische Unruhe mit Umhergehen.");
 
-STRUKTUR:
-Allgemeinzustand, Orientierung, Verhalten, körperliche Beobachtungen, Maßnahmen
-`
-},
-{
-role:"user",
-content:text
-}
-]
-})
-});
+if(/schreit|laut/.test(text))
+s.push("Wiederholte Lautäußerungen wurden beobachtet.");
 
-let data=await res.json();
+/* Schmerz */
+if(/bein/.test(text) && /schmerz/.test(text))
+s.push("Der Bewohner äußerte Schmerzen im Bereich der unteren Extremität.");
 
-console.log("MODEL:", model, data);
+/* Essen */
+if(/isst.*nicht/.test(text))
+s.push("Die Nahrungsaufnahme wurde nicht angenommen.");
 
-if(data?.choices?.[0]?.message?.content){
-return data.choices[0].message.content;
+/* Trinken */
+if(/trinkt.*nicht/.test(text))
+s.push("Die Trinkmenge war unzureichend.");
+
+/* Ausscheidung */
+if(/stuhl/.test(text))
+s.push("Stuhlkontamination wurde festgestellt.");
+
+if(/urin|inkontinenz/.test(text))
+s.push("Harninkontinenz wurde festgestellt.");
+
+/* FINAL */
+if(!s.length) return "Es zeigten sich keine relevanten Auffälligkeiten.";
+
+return s.join(" ");
 }
 
-}catch(e){
-console.log("ERROR:", e);
-}
-
-}
-
-return "KI aktuell nicht verfügbar (API / Modell prüfen)";
-}
-
-/* ===== GENERATE ===== */
-async function generate(){
+/* GENERATE */
+function generate(){
 
 let raw=input.value;
 if(!raw) return;
@@ -201,7 +184,7 @@ riskPanel.appendChild(box);
 }
 
 /* KI */
-let ai=await realAI(raw);
+let ai=localAI(raw);
 
 addMessage(ai,"ai");
 lastOutput=ai;
