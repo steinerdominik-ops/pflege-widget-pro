@@ -71,10 +71,6 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <script>
 
-/* ================= CONFIG ================= */
-const HF_API_KEY = "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";
-
-/* ================= UI ================= */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -93,7 +89,6 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ENTER */
 input.addEventListener("keydown", function(e){
 if(e.key==="Enter" && !e.shiftKey){
 e.preventDefault();
@@ -101,61 +96,24 @@ generate();
 }
 });
 
-/* ================= FIXED KI ================= */
 async function callAI(text){
 
-const prompt = `
-Du bist eine diplomierte Pflegefachkraft.
-Erstelle Pflegedokumentation, Risiken und Maßnahmen.
-Kurz, korrekt, fachlich.
-`;
-
-for(let i=0;i<3;i++){
-
 try{
-const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",{
+const res = await fetch("http://localhost:3000/api",{
 method:"POST",
-headers:{
-"Authorization":"Bearer "+HF_API_KEY,
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-inputs: prompt + "\n\n" + text,
-parameters:{max_new_tokens:200,temperature:0.4}
-})
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({text})
 });
 
-const data = await response.json();
-
-/* DEBUG */
-console.log(data);
-
-/* MODEL LOADING */
-if(data.error && data.error.toLowerCase().includes("loading")){
-await new Promise(r=>setTimeout(r,2000));
-continue;
-}
-
-/* SUCCESS */
-if(Array.isArray(data) && data[0].generated_text){
-return data[0].generated_text.replace(prompt,"").trim();
-}
-
-/* OTHER ERROR */
-if(data.error){
-return "⚠ KI Fehler: " + data.error;
-}
+const data = await res.json();
+return data.result;
 
 }catch(e){
-console.log("Netzfehler:",e);
+return "⚠ Server nicht erreichbar.";
 }
 
 }
 
-return "⚠ Verbindungsfehler – bitte später erneut versuchen.";
-}
-
-/* ================= GENERATE ================= */
 async function generate(){
 
 let raw=input.value.trim();
@@ -163,30 +121,25 @@ if(!raw) return;
 
 addMessage(raw,"user");
 
-/* Ladeanzeige */
-let loadingMsg=document.createElement("div");
-loadingMsg.className="msg ai";
-loadingMsg.innerText="KI analysiert...";
-chat.appendChild(loadingMsg);
+let loading=document.createElement("div");
+loading.className="msg ai";
+loading.innerText="KI analysiert...";
+chat.appendChild(loading);
 
-/* KI */
 let result=await callAI(raw);
 
-/* ersetzen */
-loadingMsg.innerText=result;
+loading.innerText=result;
 
 lastOutput=result;
 input.value="";
 }
 
-/* ================= COPY ================= */
 function copyText(){
 if(!lastOutput) return;
 navigator.clipboard.writeText(lastOutput);
 alert("Text kopiert");
 }
 
-/* ================= RESET ================= */
 function resetAll(){
 chat.innerHTML="";
 input.value="";
