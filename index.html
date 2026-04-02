@@ -2,16 +2,23 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Jenn AI FULL</title>
+<title>Jenn AI</title>
 
 <style>
 body{margin:0;font-family:Inter,Arial;background:#eef2f7;}
 
+#openBtn{
+position:fixed;bottom:20px;right:20px;width:80px;height:80px;
+border-radius:50%;overflow:hidden;cursor:pointer;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+#openBtn img{width:100%;height:100%;object-fit:cover;}
+
 #widget{
-position:fixed;bottom:20px;right:20px;width:420px;height:700px;
+position:fixed;bottom:20px;right:20px;width:420px;height:680px;
 background:white;border-radius:20px;
 box-shadow:0 25px 60px rgba(0,0,0,0.35);
-display:flex;flex-direction:column;
+display:none;flex-direction:column;
 }
 
 .header{
@@ -20,57 +27,73 @@ color:white;padding:14px;font-weight:bold;
 display:flex;justify-content:space-between;
 }
 
-.chat{
-flex:1;padding:12px;overflow:auto;
-display:flex;flex-direction:column;gap:10px;
-}
+.chat{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px;}
 
-.msg{
-padding:10px 14px;border-radius:16px;max-width:85%;
-white-space:pre-line;
-}
+.msg{padding:10px 14px;border-radius:16px;max-width:85%;white-space:pre-line;}
 .user{background:#e3f2fd;align-self:flex-end;}
 .ai{background:#f1f3f6;align-self:flex-start;}
 
-textarea{
-width:100%;height:70px;border-radius:12px;
-padding:10px;resize:none;
+.riskBox{
+background:#fff3cd;
+border-left:5px solid #ff9800;
+padding:10px;font-size:13px;
+margin:8px;border-radius:10px;
+white-space:pre-line;
 }
 
-button{
-width:100%;margin-top:6px;
-border:none;border-radius:12px;
-padding:10px;font-weight:bold;
-background:#0f4c81;color:white;
-cursor:pointer;
-}
+.inputArea{padding:10px;border-top:1px solid #eee;}
+textarea{width:100%;height:60px;border-radius:12px;padding:10px;}
+
+.btnRow{display:flex;gap:6px;margin-top:6px;}
+button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
+.generate{background:#0f4c81;color:white;}
+.copy{background:#27ae60;color:white;}
+.reset{background:#c0392b;color:white;}
 </style>
 </head>
 
 <body>
 
-<div id="widget">
-<div class="header">
-<span>Jenn AI FULL</span>
+<div id="openBtn" onclick="openWidget()">
+<img src="https://i.postimg.cc/hjzSWJd0/jennai.png">
 </div>
 
+<div id="widget">
+<div class="header">
+<span>Jenn AI</span>
+<span onclick="closeWidget()">✖</span>
+</div>
+
+<div id="riskPanel"></div>
 <div class="chat" id="chat"></div>
 
-<div style="padding:10px;">
+<div class="inputArea">
 <textarea id="input" placeholder="Pflege eingeben..."></textarea>
-<button onclick="generate()">Generieren</button>
+
+<div class="btnRow">
+<button class="generate" onclick="generate()">Generieren</button>
+<button class="copy" onclick="copyText()">Kopieren</button>
+<button class="reset" onclick="resetAll()">Reset</button>
+</div>
 </div>
 </div>
 
 <script>
 
-/* ================= CONFIG ================= */
+/* CONFIG */
 const HF_API_KEY = "DEIN_HF_KEY";
 const MODEL_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
 
-/* ================= UI ================= */
+/* UI */
+const widget=document.getElementById("widget");
+const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
 const chat=document.getElementById("chat");
+
+let lastOutput="";
+
+function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
+function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
 
 function addMessage(text,type){
 let div=document.createElement("div");
@@ -80,60 +103,62 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
-/* ================= FULL KI ================= */
+/* ENTER */
+input.addEventListener("keydown", function(e){
+if(e.key==="Enter" && !e.shiftKey){
+e.preventDefault();
+generate();
+}
+});
+
+/* KI CALL */
 async function callAI(text){
 
 const prompt = `
 Du bist eine diplomierte Pflegefachkraft.
 
-AUFGABE:
-1. Analysiere den Text vollständig
-2. Verstehe jedes Detail
-3. Erstelle professionelle Pflegedokumentation
-4. Erkenne ALLE Risiken
+Erstelle:
+- Pflegedokumentation
+- Risiken
+- Maßnahmen
 
-FORMAT:
-
-Dokumentation:
-<text>
-
-Risiken:
-- ...
-- ...
-
-Maßnahmen:
-- ...
-- ...
-
-REGELN:
-- medizinisch korrekt
-- keine Erklärungen
-- keine Wiederholungen
-- kurze klare Sätze
-- deutsche Fachsprache
+Kurz, sachlich, korrekt.
 `;
 
-const response = await fetch(MODEL_URL, {
-method: "POST",
-headers: {
-"Authorization": "Bearer " + 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,
-"Content-Type": "application/json"
+try{
+const response = await fetch(MODEL_URL,{
+method:"POST",
+headers:{
+"Authorization":"Bearer "+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,
+"Content-Type":"application/json"
 },
-body: JSON.stringify({
+body:JSON.stringify({
 inputs: prompt + "\n\n" + text,
-parameters: {
-max_new_tokens: 300,
-temperature: 0.4
-}
+parameters:{max_new_tokens:250,temperature:0.4}
 })
 });
 
 const data = await response.json();
 
+/* WICHTIG: Fehler abfangen */
+if(data.error){
+return "⚠ Modell lädt gerade... bitte nochmal klicken.";
+}
+
+/* Standard Output */
+if(Array.isArray(data) && data[0].generated_text){
 return data[0].generated_text.replace(prompt,"").trim();
 }
 
-/* ================= GENERATE ================= */
+return "⚠ Keine Antwort von KI.";
+
+}catch(e){
+return "⚠ Verbindungsfehler.";
+}
+
+}
+
+/* GENERATE */
 async function generate(){
 
 let raw=input.value.trim();
@@ -141,23 +166,35 @@ if(!raw) return;
 
 addMessage(raw,"user");
 
-addMessage("KI analysiert...","ai");
+/* Lade Nachricht */
+let loadingMsg=document.createElement("div");
+loadingMsg.className="msg ai";
+loadingMsg.innerText="KI analysiert...";
+chat.appendChild(loadingMsg);
 
-let result = await callAI(raw);
+/* KI */
+let result=await callAI(raw);
 
-/* letzte Nachricht ersetzen */
-chat.lastChild.innerText = result;
+/* Ersetzen statt hängen bleiben */
+loadingMsg.innerText=result;
 
+lastOutput=result;
 input.value="";
 }
 
-/* ENTER SENDEN */
-input.addEventListener("keydown", function(e){
-if(e.key==="Enter" && !e.shiftKey){
-e.preventDefault();
-generate();
+/* COPY */
+function copyText(){
+if(!lastOutput) return;
+navigator.clipboard.writeText(lastOutput);
+alert("Text kopiert");
 }
-});
+
+/* RESET */
+function resetAll(){
+chat.innerHTML="";
+input.value="";
+lastOutput="";
+}
 
 </script>
 
