@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Jenn AI</title>
+<title>Jenn AI PRO</title>
 
 <style>
 body{margin:0;font-family:Inter,Arial;background:#eef2f7;}
@@ -15,7 +15,7 @@ box-shadow:0 10px 25px rgba(0,0,0,0.3);
 #openBtn img{width:100%;height:100%;object-fit:cover;}
 
 #widget{
-position:fixed;bottom:20px;right:20px;width:420px;height:680px;
+position:fixed;bottom:20px;right:20px;width:420px;height:700px;
 background:white;border-radius:20px;
 box-shadow:0 25px 60px rgba(0,0,0,0.35);
 display:none;flex-direction:column;
@@ -34,7 +34,7 @@ display:flex;flex-direction:column;gap:10px;
 
 .msg{
 padding:10px 14px;border-radius:16px;max-width:85%;
-white-space:pre-line;
+white-space:pre-line;font-size:14px;
 }
 .user{background:#e3f2fd;align-self:flex-end;}
 .ai{background:#f1f3f6;align-self:flex-start;}
@@ -42,25 +42,30 @@ white-space:pre-line;
 .riskBox{
 background:#fff3cd;
 border-left:5px solid #ff9800;
-padding:10px;
-font-size:13px;
-margin:8px;
-border-radius:10px;
+padding:10px;font-size:13px;
+margin:8px;border-radius:10px;
 white-space:pre-line;
+}
+
+.loader{
+text-align:center;
+font-size:13px;
+color:#888;
+padding:6px;
 }
 
 .inputArea{padding:10px;border-top:1px solid #eee;}
 
 textarea{
-width:100%;height:60px;border-radius:12px;
-padding:10px;resize:none;
+width:100%;height:70px;border-radius:12px;
+padding:10px;resize:none;font-size:14px;
 }
 
 .btnRow{display:flex;gap:6px;margin-top:6px;}
 
 button{
 flex:1;border:none;border-radius:12px;
-padding:8px;font-weight:bold;cursor:pointer;
+padding:9px;font-weight:bold;cursor:pointer;
 }
 
 .generate{background:#0f4c81;color:white;}
@@ -77,12 +82,13 @@ padding:8px;font-weight:bold;cursor:pointer;
 
 <div id="widget">
 <div class="header">
-<span>Jenn AI</span>
+<span>Jenn AI PRO</span>
 <span onclick="closeWidget()">✖</span>
 </div>
 
 <div id="riskPanel"></div>
 <div class="chat" id="chat"></div>
+<div id="loader" class="loader"></div>
 
 <div class="inputArea">
 <textarea id="input" placeholder="Pflege eingeben..."></textarea>
@@ -97,12 +103,16 @@ padding:8px;font-weight:bold;cursor:pointer;
 
 <script>
 
-/* ===== UI ===== */
+/* ================= CONFIG ================= */
+const API_KEY = "HIER_DEIN_API_KEY"; // später in Desktop-App verstecken
+
+/* ================= UI ================= */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
 const chat=document.getElementById("chat");
 const riskPanel=document.getElementById("riskPanel");
+const loader=document.getElementById("loader");
 
 let lastOutput="";
 
@@ -132,14 +142,14 @@ generate();
 }
 });
 
-/* ===== RISIKEN ===== */
+/* ================= RISIKEN ================= */
 function detectRisks(t){
 t=t.toLowerCase();
 let r=[];
 
 if(/unruhig|irrt|weglaufen|läuft/.test(t)) r.push("Sturzrisiko");
-if(/trink/.test(t) && /(nicht|wenig)/.test(t)) r.push("Dehydratation");
-if(/ess|verweig/.test(t)) r.push("Mangelernährung");
+if(/trink|flüssigkeit/.test(t) && /(nicht|wenig|kaum|reduziert)/.test(t)) r.push("Dehydratation");
+if(/ess|verweig|nahrung/.test(t)) r.push("Mangelernährung");
 if(/schmerz/.test(t)) r.push("Schmerzbelastung");
 if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautschädigung");
 if(/rötung|wunde|dekubitus/.test(t)) r.push("Dekubitusrisiko");
@@ -147,69 +157,91 @@ if(/rötung|wunde|dekubitus/.test(t)) r.push("Dekubitusrisiko");
 return [...new Set(r)];
 }
 
-/* ===== KI ===== */
-function smartAI(text){
+/* ================= KI ================= */
+async function smartAI(text){
+
+try{
+const response = await fetch("https://api.openai.com/v1/chat/completions", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"Authorization": "Bearer " + API_KEY
+},
+body: JSON.stringify({
+model: "gpt-4o-mini",
+messages: [
+{
+role: "system",
+content: `
+Du bist eine diplomierte Pflegefachkraft.
+
+Aufgabe:
+Erstelle professionelle Pflegedokumentation.
+
+Regeln:
+- sachlich
+- kurz
+- medizinisch korrekt
+- keine Erklärungen
+- keine Wiederholungen
+- nur Beobachtung + Zustand
+- deutscher Pflege-Standard
+`
+},
+{
+role: "user",
+content: text
+}
+]
+})
+});
+
+const data = await response.json();
+
+if(data.choices && data.choices.length){
+return data.choices[0].message.content;
+}else{
+throw new Error("API Fehler");
+}
+
+}catch(e){
+return fallbackAI(text);
+}
+
+}
+
+/* ================= FALLBACK KI ================= */
+function fallbackAI(text){
 
 text=text.toLowerCase();
 let s=[];
 
-/* Zustand */
-if(/schlecht|müde|schwach/.test(text))
+if(/schlecht|müde/.test(text))
 s.push("Der Allgemeinzustand wirkte reduziert.");
 
-/* Orientierung */
-if(/verwirrt|desorientiert/.test(text))
-s.push("Der Bewohner war zeitlich und/oder örtlich desorientiert.");
+if(/verwirrt/.test(text))
+s.push("Der Bewohner war desorientiert.");
 
-/* Verhalten */
-if(/unruhig|irrt|läuft/.test(text))
-s.push("Es zeigte sich eine ausgeprägte motorische Unruhe mit Umhergehen.");
+if(/unruhig|läuft/.test(text))
+s.push("Motorische Unruhe wurde beobachtet.");
 
-if(/schreit|laut/.test(text))
-s.push("Es kam wiederholt zu lautem Rufen.");
+if(/schmerz/.test(text))
+s.push("Der Bewohner äußerte Schmerzen.");
 
-if(/weint/.test(text))
-s.push("Der Bewohner wirkte emotional belastet.");
+if(/trink/.test(text))
+s.push("Die Trinkmenge war reduziert.");
 
-/* Schmerz */
-if(/bein/.test(text)&&/schmerz/.test(text))
-s.push("Der Bewohner klagte über Schmerzen im rechten Bein.");
+if(/isst/.test(text))
+s.push("Die Nahrungsaufnahme war vermindert.");
 
-if(/rücken/.test(text)&&/schmerz/.test(text))
-s.push("Der Bewohner äußerte Rückenschmerzen.");
-
-/* Ernährung */
-if(/verweig|isst.*nicht/.test(text))
-s.push("Die Nahrungsaufnahme wurde verweigert.");
-
-if(/trink/.test(text) && /(nicht|wenig)/.test(text))
-s.push("Die Trinkmenge war deutlich reduziert.");
-
-/* Haut */
-if(/rot|rötung/.test(text)&&/po|gesäß/.test(text))
-s.push("Im Gesäßbereich zeigte sich eine Hautrötung.");
-
-/* Ausscheidung */
-if(/stuhl/.test(text))
-s.push("Es lag eine Stuhlinkontinenz vor.");
-
-if(/urin/.test(text))
-s.push("Es bestand Harninkontinenz.");
-
-/* Bewegung */
-if(/zimmer|läuft/.test(text))
-s.push("Der Bewohner bewegte sich selbstständig innerhalb der Einrichtung.");
-
-/* FALLBACK */
-if(!s.length){
-return "Es zeigten sich keine pflegerisch relevanten Auffälligkeiten.";
-}
+if(!s.length)
+return "Keine relevanten Auffälligkeiten.";
 
 return s.join(" ");
 }
 
-/* ===== GENERATE ===== */
-function generate(){
+/* ================= GENERATE ================= */
+async function generate(){
 
 let raw=input.value.trim();
 if(!raw) return;
@@ -227,31 +259,37 @@ box.innerText="⚠ Risiken:\n"+risks.join("\n");
 riskPanel.appendChild(box);
 }
 
-/* KI TEXT + MASSNAHMEN */
-let result=smartAI(raw);
+/* LOADER */
+loader.innerText="KI analysiert...";
 
+/* KI */
+let result = await smartAI(raw);
+
+/* MASSNAHMEN AUTO */
 let full = result + "\n\nMaßnahmen: Beobachtung, Flüssigkeitsangebot, Sturzprophylaxe.";
 
 /* OUTPUT */
+loader.innerText="";
 addMessage(full,"ai");
-lastOutput=full;
 
+lastOutput=full;
 input.value="";
 }
 
-/* COPY */
+/* ================= COPY ================= */
 function copyText(){
 if(!lastOutput) return;
 navigator.clipboard.writeText(lastOutput);
 alert("Text kopiert");
 }
 
-/* RESET */
+/* ================= RESET ================= */
 function resetAll(){
 chat.innerHTML="";
 input.value="";
 lastOutput="";
 riskPanel.innerHTML="";
+loader.innerText="";
 }
 
 </script>
