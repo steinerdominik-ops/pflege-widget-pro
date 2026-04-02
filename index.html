@@ -27,9 +27,15 @@ color:white;padding:14px;font-weight:bold;
 display:flex;justify-content:space-between;
 }
 
-.chat{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px;}
+.chat{
+flex:1;padding:12px;overflow:auto;
+display:flex;flex-direction:column;gap:10px;
+}
 
-.msg{padding:10px 14px;border-radius:16px;max-width:85%;}
+.msg{
+padding:10px 14px;border-radius:16px;max-width:85%;
+white-space:pre-line;
+}
 .user{background:#e3f2fd;align-self:flex-end;}
 .ai{background:#f1f3f6;align-self:flex-start;}
 
@@ -44,10 +50,19 @@ white-space:pre-line;
 }
 
 .inputArea{padding:10px;border-top:1px solid #eee;}
-textarea{width:100%;height:60px;border-radius:12px;padding:10px;}
+
+textarea{
+width:100%;height:60px;border-radius:12px;
+padding:10px;resize:none;
+}
 
 .btnRow{display:flex;gap:6px;margin-top:6px;}
-button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
+
+button{
+flex:1;border:none;border-radius:12px;
+padding:8px;font-weight:bold;cursor:pointer;
+}
+
 .generate{background:#0f4c81;color:white;}
 .copy{background:#27ae60;color:white;}
 .reset{background:#c0392b;color:white;}
@@ -82,7 +97,7 @@ button{flex:1;border:none;border-radius:12px;padding:8px;font-weight:bold;}
 
 <script>
 
-/* UI */
+/* ===== UI ===== */
 const widget=document.getElementById("widget");
 const openBtn=document.getElementById("openBtn");
 const input=document.getElementById("input");
@@ -91,8 +106,15 @@ const riskPanel=document.getElementById("riskPanel");
 
 let lastOutput="";
 
-function openWidget(){widget.style.display="flex";openBtn.style.display="none";}
-function closeWidget(){widget.style.display="none";openBtn.style.display="block";}
+function openWidget(){
+widget.style.display="flex";
+openBtn.style.display="none";
+}
+
+function closeWidget(){
+widget.style.display="none";
+openBtn.style.display="block";
+}
 
 function addMessage(text,type){
 let div=document.createElement("div");
@@ -102,77 +124,85 @@ chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 }
 
+/* ENTER SENDEN */
+input.addEventListener("keydown", function(e){
+if(e.key==="Enter" && !e.shiftKey){
+e.preventDefault();
+generate();
+}
+});
+
 /* ===== RISIKEN ===== */
 function detectRisks(t){
 t=t.toLowerCase();
 let r=[];
 
-if(/unruhig|irrt|weglaufen/.test(t)) r.push("Sturzrisiko");
-if(/trink/.test(t)&&/nicht|wenig/.test(t)) r.push("Dehydratation");
-if(/ess|verwe/.test(t)) r.push("Mangelernährung");
+if(/unruhig|irrt|weglaufen|läuft/.test(t)) r.push("Sturzrisiko");
+if(/trink/.test(t) && /(nicht|wenig)/.test(t)) r.push("Dehydratation");
+if(/ess|verweig/.test(t)) r.push("Mangelernährung");
 if(/schmerz/.test(t)) r.push("Schmerzbelastung");
-if(/stuhl|urin/.test(t)) r.push("Hautschädigung");
+if(/stuhl|urin|inkontinenz/.test(t)) r.push("Hautschädigung");
+if(/rötung|wunde|dekubitus/.test(t)) r.push("Dekubitusrisiko");
 
 return [...new Set(r)];
 }
 
-/* ===== STABILE KI (LOKAL + SMART) ===== */
+/* ===== KI ===== */
 function smartAI(text){
 
 text=text.toLowerCase();
-
 let s=[];
 
 /* Zustand */
 if(/schlecht|müde|schwach/.test(text))
-s.push("Der Allgemeinzustand zeigte sich reduziert.");
+s.push("Der Allgemeinzustand wirkte reduziert.");
 
 /* Orientierung */
 if(/verwirrt|desorientiert/.test(text))
-s.push("Der Bewohner zeigte sich desorientiert.");
+s.push("Der Bewohner war zeitlich und/oder örtlich desorientiert.");
 
 /* Verhalten */
 if(/unruhig|irrt|läuft/.test(text))
-s.push("Es zeigte sich motorische Unruhe mit Umhergehen.");
+s.push("Es zeigte sich eine ausgeprägte motorische Unruhe mit Umhergehen.");
 
 if(/schreit|laut/.test(text))
-s.push("Wiederholte Lautäußerungen wurden beobachtet.");
+s.push("Es kam wiederholt zu lautem Rufen.");
 
 if(/weint/.test(text))
-s.push("Der Bewohner zeigte sich emotional belastet.");
+s.push("Der Bewohner wirkte emotional belastet.");
 
 /* Schmerz */
 if(/bein/.test(text)&&/schmerz/.test(text))
-s.push("Der Bewohner äußerte Schmerzen im rechten Bein.");
+s.push("Der Bewohner klagte über Schmerzen im rechten Bein.");
 
 if(/rücken/.test(text)&&/schmerz/.test(text))
 s.push("Der Bewohner äußerte Rückenschmerzen.");
 
 /* Ernährung */
-if(/verwe|isst.*nicht/.test(text))
-s.push("Die Nahrungsaufnahme wurde nicht angenommen.");
+if(/verweig|isst.*nicht/.test(text))
+s.push("Die Nahrungsaufnahme wurde verweigert.");
 
-if(/trink/.test(text)&&/nicht|wenig/.test(text))
-s.push("Die Trinkmenge war unzureichend.");
+if(/trink/.test(text) && /(nicht|wenig)/.test(text))
+s.push("Die Trinkmenge war deutlich reduziert.");
 
 /* Haut */
 if(/rot|rötung/.test(text)&&/po|gesäß/.test(text))
-s.push("Im Bereich des Gesäßes zeigte sich eine Hautrötung.");
+s.push("Im Gesäßbereich zeigte sich eine Hautrötung.");
 
 /* Ausscheidung */
 if(/stuhl/.test(text))
-s.push("Stuhlkontamination wurde festgestellt.");
+s.push("Es lag eine Stuhlinkontinenz vor.");
 
 if(/urin/.test(text))
-s.push("Harninkontinenz wurde festgestellt.");
+s.push("Es bestand Harninkontinenz.");
 
 /* Bewegung */
 if(/zimmer|läuft/.test(text))
-s.push("Der Bewohner bewegte sich innerhalb der Einrichtung.");
+s.push("Der Bewohner bewegte sich selbstständig innerhalb der Einrichtung.");
 
 /* FALLBACK */
 if(!s.length){
-return "Es zeigten sich keine relevanten Auffälligkeiten.";
+return "Es zeigten sich keine pflegerisch relevanten Auffälligkeiten.";
 }
 
 return s.join(" ");
@@ -181,7 +211,7 @@ return s.join(" ");
 /* ===== GENERATE ===== */
 function generate(){
 
-let raw=input.value;
+let raw=input.value.trim();
 if(!raw) return;
 
 addMessage(raw,"user");
@@ -197,11 +227,14 @@ box.innerText="⚠ Risiken:\n"+risks.join("\n");
 riskPanel.appendChild(box);
 }
 
-/* KI */
+/* KI TEXT + MASSNAHMEN */
 let result=smartAI(raw);
 
-addMessage(result,"ai");
-lastOutput=result;
+let full = result + "\n\nMaßnahmen: Beobachtung, Flüssigkeitsangebot, Sturzprophylaxe.";
+
+/* OUTPUT */
+addMessage(full,"ai");
+lastOutput=full;
 
 input.value="";
 }
@@ -210,6 +243,7 @@ input.value="";
 function copyText(){
 if(!lastOutput) return;
 navigator.clipboard.writeText(lastOutput);
+alert("Text kopiert");
 }
 
 /* RESET */
